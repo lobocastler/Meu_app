@@ -100,6 +100,7 @@
     
     <canvas id="gameCanvas" width="1200" height="600" class="z-0"></canvas>
 
+    <!-- Interface (Topo Esquerdo) -->
     <div class="absolute top-6 left-8 pointer-events-none z-10 flex flex-col gap-3">
         <div class="flex flex-col">
             <div class="flex items-center gap-3 mb-[-2px] pointer-events-auto">
@@ -107,7 +108,6 @@
                 <button id="btn-audio" onclick="toggleAudio()" class="bg-black/50 hover:bg-black/80 text-white/80 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded border border-white/20 transition cursor-pointer shadow-md">
                     🔇 Som Off
                 </button>
-                <!-- Slider de Volume -->
                 <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="updateVolume(this.value)" class="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer hidden shadow-inner">
             </div>
             
@@ -117,11 +117,9 @@
                 </h1>
                 
                 <div class="flex gap-1 ml-2 pointer-events-auto">
-                    <!-- Botão Reiniciar -->
                     <button onclick="retryLevel()" class="text-white/70 hover:text-white transition p-1.5 rounded-full hover:bg-white/20 cursor-pointer drop-shadow-md" title="Reiniciar Fase">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8));"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
-                    <!-- Botão Menu de Nível -->
                     <button onclick="showLevelSelector()" class="text-white/70 hover:text-white transition p-1.5 rounded-full hover:bg-white/20 cursor-pointer drop-shadow-md" title="Selecionar Nível">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8));"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h7"></path></svg>
                     </button>
@@ -140,6 +138,7 @@
         </div>
     </div>
 
+    <!-- Armas (Topo Direito) -->
     <div class="absolute top-6 right-8 flex gap-3 pointer-events-auto z-10">
         <button onclick="setWeapon('pedra')" id="btn-pedra" class="btn-weapon active w-14 h-14 flex flex-col items-center justify-center rounded-2xl">
             <div class="ammo-badge" id="ammo-pedra">7</div>
@@ -165,9 +164,7 @@
         <div class="bg-gray-900/95 p-8 rounded-3xl border border-white/10 shadow-2xl text-center flex flex-col items-center max-w-sm w-full">
             <h3 class="text-xl font-bold text-yellow-400 mb-2 tracking-widest uppercase">Viajar para Fase</h3>
             <p class="text-xs text-gray-400 mb-6">Escolhe um nível entre 1 e 100</p>
-            
             <input type="number" id="level-input" min="1" max="100" class="w-24 bg-black text-white text-center text-3xl font-bold p-3 rounded-xl border border-gray-600 mb-6 focus:outline-none focus:border-yellow-400 shadow-inner">
-            
             <div class="flex gap-4 w-full">
                 <button onclick="closeLevelSelector()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition">Cancelar</button>
                 <button onclick="jumpToLevel()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition">Iniciar</button>
@@ -191,48 +188,16 @@
 </div>
 
 <script>
-    // --- FUNÇÕES DA INTERFACE ---
-    function showLevelSelector() {
-        document.getElementById('level-selector-modal').classList.remove('hidden');
-        document.getElementById('level-input').value = currentLevel;
-        setTimeout(() => document.getElementById('level-input').focus(), 100);
-    }
+    // --- COLE O SEU LINK DO GITHUB AQUI ---
+    const BGM_URL = "https://raw.githubusercontent.com/TeuNomeDeUtilizador/TeuRepositorio/main/tua-musica.mp3";
     
-    function closeLevelSelector() {
-        document.getElementById('level-selector-modal').classList.add('hidden');
-    }
-    
-    function jumpToLevel() {
-        let val = parseInt(document.getElementById('level-input').value);
-        if (val >= 1 && val <= 100) {
-            currentLevel = val;
-            closeLevelSelector();
-            loadLevel(currentLevel);
-        } else {
-            document.getElementById('level-input').style.borderColor = 'red';
-            setTimeout(() => document.getElementById('level-input').style.borderColor = '#4b5563', 500);
-        }
-    }
-
-    // --- ÁUDIO (Música do Google Drive + SFX Sintético) ---
+    // --- ÁUDIO (Música Externa + SFX Sintetizado) ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
     let masterGain = null;
+    let bgmAudioElement = null;
     let isMuted = true;
     let userVolume = 0.5; 
-    
-    // Removemos a tag crossOrigin porque o Google Drive bloqueia pedidos de segurança profundos.
-    const bgmAudio = new Audio('https://drive.google.com/uc?export=download&id=138MBuh8dfKMXnnQVRrImRzoJJ0Mxi5ST');
-    bgmAudio.loop = true; // Repetir infinitamente
-    bgmAudio.volume = userVolume * 0.5; // Começa num volume equilibrado
-    
-    // Link proxy de segurança, caso o Google Drive ative bloqueio de tráfego
-    const proxyUrl = 'https://corsproxy.io/?https://drive.google.com/uc?export=download&id=138MBuh8dfKMXnnQVRrImRzoJJ0Mxi5ST';
-
-    function updateVolume(val) {
-        userVolume = parseFloat(val);
-        bgmAudio.volume = userVolume * 0.5; // Atualiza o volume da tua música em tempo real
-    }
 
     function initAudio() {
         try {
@@ -245,9 +210,12 @@
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
-            // Força a música a tocar se não estivermos no modo silêncio
-            if (!isMuted && bgmAudio.paused) {
-                bgmAudio.play().catch(e => console.warn("Browser bloqueou autoplay.", e));
+            
+            // Inicia o elemento de Áudio Externo (Música do GitHub)
+            if (!bgmAudioElement && BGM_URL !== "COLE_O_SEU_LINK_DO_GITHUB_AQUI") {
+                bgmAudioElement = new Audio(BGM_URL);
+                bgmAudioElement.loop = true;
+                bgmAudioElement.volume = userVolume * 0.4; // 40% do volume para não abafar os efeitos
             }
         } catch(e) { console.error("Erro no Audio", e); }
     }
@@ -264,31 +232,18 @@
             btn.classList.replace('text-yellow-400', 'text-white/80');
             slider.classList.add('hidden');
             
-            // Pausa a música externa
-            bgmAudio.pause();
+            if (masterGain && audioCtx) masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+            if (bgmAudioElement) bgmAudioElement.pause();
             
-            if (masterGain && audioCtx) {
-                masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-            }
         } else {
             btn.innerHTML = '🔊 Som On';
             btn.classList.replace('text-white/80', 'text-yellow-400');
             slider.classList.remove('hidden');
             
-            // Dá Play na tua música do Google Drive com proteção contra falhas
-            let playPromise = bgmAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.warn("Aviso: O Google Drive recusou o link direto. Ativando servidor Proxy...", error);
-                    if (bgmAudio.src !== proxyUrl) {
-                        bgmAudio.src = proxyUrl;
-                        bgmAudio.play().catch(e => console.error("Falha crítica ao tocar áudio.", e));
-                    }
-                });
-            }
+            if (masterGain && audioCtx) masterGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
             
-            if (masterGain && audioCtx) {
-                masterGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
+            if (bgmAudioElement) {
+                bgmAudioElement.play().catch(e => console.log("Bloqueio de Autoplay no Áudio Externo", e));
             }
             
             toast.style.opacity = '1';
@@ -297,6 +252,14 @@
         }
     }
 
+    function updateVolume(val) {
+        userVolume = parseFloat(val);
+        if (bgmAudioElement) {
+            bgmAudioElement.volume = userVolume * 0.4;
+        }
+    }
+
+    // Efeitos Sonoros Otimizados
     function playImpactSound(velocity) {
         if (isMuted || !audioCtx || !masterGain) return;
         try {
@@ -308,10 +271,8 @@
             osc.type = 'triangle'; 
             osc.frequency.setValueAtTime(150, t);
             osc.frequency.exponentialRampToValueAtTime(40, t + 0.1); 
-            
             oscGain.gain.setValueAtTime(vol, t);
             oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-            
             osc.connect(oscGain); oscGain.connect(masterGain);
             osc.start(t); osc.stop(t + 0.2);
 
@@ -384,7 +345,30 @@
         } catch(e) {}
     }
 
-    // --- CONFIGURAÇÃO FÍSICA OTIMIZADA ---
+    // --- INTERFACE ---
+    function showLevelSelector() {
+        document.getElementById('level-selector-modal').classList.remove('hidden');
+        document.getElementById('level-input').value = currentLevel;
+        setTimeout(() => document.getElementById('level-input').focus(), 100);
+    }
+    
+    function closeLevelSelector() {
+        document.getElementById('level-selector-modal').classList.add('hidden');
+    }
+    
+    function jumpToLevel() {
+        let val = parseInt(document.getElementById('level-input').value);
+        if (val >= 1 && val <= 100) {
+            currentLevel = val;
+            closeLevelSelector();
+            loadLevel(currentLevel);
+        } else {
+            document.getElementById('level-input').style.borderColor = 'red';
+            setTimeout(() => document.getElementById('level-input').style.borderColor = '#4b5563', 500);
+        }
+    }
+
+    // --- CONFIGURAÇÃO FÍSICA OTIMIZADA (Hyper-FPS) ---
     const { Engine, Render, Runner, World, Bodies, Body, Composite, Constraint, Events, Vector, Sleeping } = Matter;
 
     const canvas = document.getElementById('gameCanvas');
@@ -401,8 +385,8 @@
     resizeCanvas();
 
     const engine = Engine.create({ enableSleeping: true }); 
-    engine.positionIterations = 8; // Otimizado
-    engine.velocityIterations = 6; // Otimizado
+    engine.positionIterations = 8; 
+    engine.velocityIterations = 6; 
     engine.gravity.y = 1.3; 
     engine.timing.timeScale = 0.85; 
 
@@ -410,12 +394,10 @@
     const runner = Runner.create({ isFixed: true });
     Runner.run(runner, engine);
 
-    // Filtros de Colisão (Hyper-FPS: Entulho não bate em entulho)
     const CAT_DEFAULT = 0x0001;
     const CAT_INTACT = 0x0002;
     const CAT_DEBRIS = 0x0004;
 
-    // --- VARIÁVEIS GLOBAIS ---
     let currentLevel = 1;
     const maxLevels = 100;
     let gameState = 'playing'; 
@@ -537,7 +519,9 @@
 
     function startDrag(e) {
         if (gameState !== 'playing' || !sling || !sling.bodyB || !projectile) return;
-        initAudio(); 
+        
+        if(!audioCtx && !isMuted) initAudio(); 
+        
         const pos = getCanvasPos(e);
         if (pos.x < WIDTH / 2) { 
             if (e.type === 'touchstart') e.preventDefault();
@@ -625,7 +609,7 @@
             }
         }
 
-        // Limpeza Munições
+        // Limpeza de Balas
         for (let i = firedProjectiles.length - 1; i >= 0; i--) {
             let p = firedProjectiles[i];
             if (p.label === 'bomba') continue; 
@@ -657,7 +641,6 @@
         for (let i = castleBlocks.length - 1; i >= 0; i--) {
             const block = castleBlocks[i];
             
-            // OTIMIZAÇÃO: Culling de Vaporização
             if (block.isVaporized) {
                 if (!block.customDestroyed) { block.customDestroyed = true; newDestructions++; }
                 World.remove(world, block);
@@ -685,7 +668,7 @@
 
                 if (tumbled || blownAway || fellToGround) {
                     block.customDestroyed = true;
-                    // OTIMIZAÇÃO (Fantasmas): Os destroços não batem mais entre si
+                    // Debris não bate em Debris (Otimização Máxima)
                     block.collisionFilter.category = CAT_DEBRIS;
                     block.collisionFilter.mask = CAT_DEFAULT | CAT_INTACT; 
                     newDestructions++;
@@ -799,11 +782,9 @@
     function createKineticShockwave(x, y, type) {
         const isFerro = type === 'ferro';
         const radius = isFerro ? 110 : 70;
-        // SUPER CASCATA: Raio de vaporização central aumentado (absorve pedaços destruídos de imediato)
         const coreRadius = isFerro ? 35 : 18; 
         const force = isFerro ? 0.08 : 0.04;
         
-        // Efeito visual mais poeirento e persistente
         shockwaves.push({ x: x, y: y, radius: 0, maxRadius: radius, alpha: 0.8 });
 
         castleBlocks.forEach(b => {
@@ -1250,7 +1231,6 @@
             ctx.fill();
         }
 
-        // DESENHO: Efeito de Poeira/Onda visualmente denso
         for (let i = shockwaves.length - 1; i >= 0; i--) {
             let sw = shockwaves[i];
             sw.radius += 12;
@@ -1289,5 +1269,6 @@
 </script>
 </body>
 </html>
+
 
 ```
