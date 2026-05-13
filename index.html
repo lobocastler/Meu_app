@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Destruição Épica: 100 Castelos</title>
+    <title>Destruição Épica: Evolution</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
@@ -34,16 +34,17 @@
         
         .btn-weapon { 
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(20, 25, 30, 0.4);
+            background: rgba(20, 25, 30, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(4px);
             position: relative;
+            min-width: 44px;
         }
         .btn-weapon.active {
             transform: translateY(-4px);
             border-color: #facc15;
-            background: rgba(0, 0, 0, 0.6);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 8px 12px -3px rgba(0,0,0,0.5);
         }
         .btn-weapon:disabled {
             opacity: 0.3;
@@ -56,76 +57,74 @@
         
         .ammo-badge {
             position: absolute;
-            top: -6px; right: -6px;
+            top: -4px; right: -4px;
             background: #ef4444;
             color: white;
             border-radius: 9999px;
-            width: 20px; height: 20px;
-            font-size: 11px;
+            width: 16px; height: 16px;
+            font-size: 9px;
             font-weight: bold;
             display: flex; justify-content: center; align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.6);
             z-index: 10;
         }
         
-        .text-shadow-hard {
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.9);
-        }
+        .text-shadow-hard { text-shadow: 0px 2px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.9); }
 
-        /* Estilos do Slider */
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #facc15;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #facc15; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
         input[type=range]::-moz-range-thumb {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #facc15;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            width: 14px; height: 14px; border-radius: 50%; background: #facc15; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
+        
+        #weapon-bar {
+            max-width: 50vw;
+            overflow-x: auto;
+            scrollbar-width: none; 
+        }
+        #weapon-bar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
+<!-- MÚSICA DO GITHUB (Nativa) -->
+<audio id="bgm-player" loop preload="auto" crossorigin="anonymous">
+    <source src="https://raw.githubusercontent.com/lobocastler/Music_game/main/Beneath_the_Stone_Vault.mp3" type="audio/mpeg">
+</audio>
+
 <div id="game-wrapper">
-    <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/40 to-transparent pointer-events-none z-0"></div>
+    <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/50 to-transparent pointer-events-none z-0"></div>
     
     <canvas id="gameCanvas" width="1200" height="600" class="z-0"></canvas>
 
     <!-- Interface (Topo Esquerdo) -->
-    <div class="absolute top-6 left-8 pointer-events-none z-10 flex flex-col gap-3">
+    <div class="absolute top-6 left-6 pointer-events-none z-10 flex flex-col gap-3">
         <div class="flex flex-col">
             <div class="flex items-center gap-2 mb-[-2px] pointer-events-auto">
-                <p id="biome-name" class="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase text-shadow-hard m-0 mr-2">Planícies Verdes</p>
+                <p id="biome-name" class="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase text-shadow-hard m-0">Planícies Verdes</p>
+                <p id="architecture-style" class="text-blue-400 text-[9px] font-bold tracking-widest uppercase text-shadow-hard m-0 ml-1">Clássico</p>
+                <p id="biome-effect" class="text-yellow-400 text-[9px] font-bold tracking-widest uppercase text-shadow-hard m-0 ml-1 hidden">❄️ Gelo</p>
                 
-                <button id="btn-audio" onclick="toggleAudio()" class="bg-black/50 hover:bg-black/80 text-white/80 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded border border-white/20 transition cursor-pointer shadow-md">
+                <button id="btn-audio" onclick="toggleAudio()" class="ml-2 bg-black/50 hover:bg-black/80 text-white/80 text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded border border-white/20 transition cursor-pointer shadow-md">
                     🔇 Som Off
                 </button>
                 
-                <!-- PAINEL COM DOIS CONTROLOS DE VOLUME -->
-                <div id="volume-controls" class="hidden flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm">
-                    <div class="flex items-center gap-1.5" title="Volume da Música">
-                        <span class="text-[11px]">🎵</span>
-                        <input type="range" id="bgm-slider" min="0" max="1" step="0.05" value="0.2" oninput="updateBgmVolume(this.value)" class="w-16 h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer shadow-inner">
+                <div id="volume-controls" class="hidden flex items-center gap-2 bg-black/40 px-2 py-1 rounded-lg border border-white/10 backdrop-blur-sm">
+                    <div class="flex items-center gap-1" title="Volume da Música">
+                        <span class="text-[10px]">🎵</span>
+                        <input type="range" id="bgm-slider" min="0" max="1" step="0.05" value="0.15" oninput="updateBgmVolume(this.value)" class="w-12 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer shadow-inner">
                     </div>
-                    <div class="w-px h-4 bg-white/20"></div>
-                    <div class="flex items-center gap-1.5" title="Volume dos Efeitos">
-                        <span class="text-[11px]">💥</span>
-                        <input type="range" id="sfx-slider" min="0" max="1" step="0.05" value="0.8" oninput="updateSfxVolume(this.value)" class="w-16 h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer shadow-inner">
+                    <div class="w-px h-3 bg-white/20 mx-1"></div>
+                    <div class="flex items-center gap-1" title="Volume dos Efeitos">
+                        <span class="text-[10px]">💥</span>
+                        <input type="range" id="sfx-slider" min="0" max="1" step="0.05" value="0.8" oninput="updateSfxVolume(this.value)" class="w-12 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer shadow-inner">
                     </div>
                 </div>
             </div>
             
             <div class="flex items-baseline gap-2 mt-1">
-                <h1 class="text-[3.5rem] text-white font-black m-0 leading-none tracking-tight text-shadow-hard">
+                <h1 class="text-5xl text-white font-black m-0 leading-none tracking-tight text-shadow-hard">
                     LVL <span id="level-display" class="text-yellow-400">1</span>
                 </h1>
                 
@@ -140,39 +139,53 @@
             </div>
         </div>
         
-        <div class="pointer-events-auto w-64 flex flex-col gap-1.5">
+        <div class="pointer-events-auto w-56 flex flex-col gap-1 mt-1">
             <div class="flex justify-between items-end px-0.5">
-                <span class="text-[10px] text-white/90 font-bold uppercase tracking-wider text-shadow-hard">Destruição</span>
-                <span id="progress-text-value" class="text-xs font-bold text-white text-shadow-hard">0% <span class="text-white/70 font-normal">/ 40%</span></span>
+                <span id="objective-title" class="text-[10px] text-white/90 font-bold uppercase tracking-wider text-shadow-hard text-yellow-400">Missão: Destruição</span>
+                <span id="progress-text-value" class="text-[10px] font-bold text-white text-shadow-hard">0% <span class="text-white/70 font-normal">/ 40%</span></span>
             </div>
-            <div class="w-full h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/20 shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+            <div class="w-full h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/20 shadow-[0_2px_4px_rgba(0,0,0,0.5)] relative">
                 <div id="progress-bar" class="h-full w-0 bg-yellow-400 rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(250,204,21,0.8)]"></div>
             </div>
         </div>
     </div>
 
     <!-- Armas (Topo Direito) -->
-    <div class="absolute top-6 right-8 flex gap-3 pointer-events-auto z-10">
-        <button onclick="setWeapon('pedra')" id="btn-pedra" class="btn-weapon active w-14 h-14 flex flex-col items-center justify-center rounded-2xl">
+    <div id="weapon-bar" class="absolute top-6 right-6 flex gap-2 pointer-events-auto z-10 px-2 py-1 bg-black/20 rounded-2xl backdrop-blur-sm border border-white/5">
+        <button onclick="setWeapon('pedra')" id="btn-pedra" class="btn-weapon active w-12 h-12 flex flex-col items-center justify-center rounded-xl shrink-0">
             <div class="ammo-badge" id="ammo-pedra">7</div>
-            <div class="w-5 h-5 bg-[#a8a9a6] rounded-full mb-1 opacity-90 shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.4),0_2px_4px_rgba(0,0,0,0.6)]"></div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-white text-shadow-hard">Pedra</span>
+            <div class="w-4 h-4 bg-[#a8a9a6] rounded-full mb-1 opacity-90 shadow-[inset_-1px_-1px_0_rgba(0,0,0,0.4),0_1px_2px_rgba(0,0,0,0.6)]"></div>
+            <span class="text-[8px] uppercase font-bold tracking-wider text-white text-shadow-hard">Pedra</span>
         </button>
-        <button onclick="setWeapon('ferro')" id="btn-ferro" class="btn-weapon w-14 h-14 flex flex-col items-center justify-center rounded-2xl">
+        <button onclick="setWeapon('ferro')" id="btn-ferro" class="btn-weapon w-12 h-12 flex flex-col items-center justify-center rounded-xl shrink-0">
             <div class="ammo-badge" id="ammo-ferro" style="background: #4b5563;">🔒</div>
-            <div class="w-6 h-6 bg-[#222] rounded-full mb-1 opacity-90 shadow-[inset_-2px_-2px_0_rgba(255,255,255,0.2),0_2px_4px_rgba(0,0,0,0.6)]"></div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-white text-shadow-hard">Ferro</span>
+            <div class="w-5 h-5 bg-[#222] rounded-full mb-1 opacity-90 shadow-[inset_-1px_-1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.6)]"></div>
+            <span class="text-[8px] uppercase font-bold tracking-wider text-white text-shadow-hard">Ferro</span>
         </button>
-        <button onclick="setWeapon('bomba')" id="btn-bomba" class="btn-weapon w-14 h-14 flex flex-col items-center justify-center rounded-2xl">
+        <button onclick="setWeapon('bomba')" id="btn-bomba" class="btn-weapon w-12 h-12 flex flex-col items-center justify-center rounded-xl shrink-0">
             <div class="ammo-badge" id="ammo-bomba" style="background: #4b5563;">🔒</div>
-            <div class="w-6 h-6 bg-[#ef4444] rounded-full relative shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.4),0_2px_4px_rgba(0,0,0,0.6)] mb-1">
-                <div class="absolute w-1 h-1.5 bg-yellow-400 -top-1.5 left-2 rounded-t-sm"></div>
+            <div class="w-5 h-5 bg-[#ef4444] rounded-full relative shadow-[inset_-1px_-1px_0_rgba(0,0,0,0.4),0_1px_2px_rgba(0,0,0,0.6)] mb-1">
+                <div class="absolute w-1 h-1 bg-yellow-400 -top-1 left-2 rounded-t-sm"></div>
             </div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-white text-shadow-hard">Bomba</span>
+            <span class="text-[8px] uppercase font-bold tracking-wider text-white text-shadow-hard">Bomba</span>
+        </button>
+        <button onclick="setWeapon('meteoro')" id="btn-meteoro" class="btn-weapon w-12 h-12 flex flex-col items-center justify-center rounded-xl shrink-0">
+            <div class="ammo-badge" id="ammo-meteoro" style="background: #4b5563;">🔒</div>
+            <div class="w-4 h-4 bg-purple-500 rounded-full relative shadow-[inset_-1px_-1px_0_rgba(0,0,0,0.4),0_0_6px_rgba(168,85,247,0.8)] mb-1"></div>
+            <span class="text-[8px] uppercase font-bold tracking-wider text-white text-shadow-hard">Meteoro</span>
+        </button>
+        <button onclick="setWeapon('raio')" id="btn-raio" class="btn-weapon w-12 h-12 flex flex-col items-center justify-center rounded-xl shrink-0">
+            <div class="ammo-badge" id="ammo-raio" style="background: #4b5563;">🔒</div>
+            <div class="w-3 h-3 bg-cyan-400 rounded-full relative shadow-[inset_-1px_-1px_0_rgba(0,0,0,0.4),0_0_6px_rgba(34,211,238,0.8)] mb-1 skew-x-12"></div>
+            <span class="text-[8px] uppercase font-bold tracking-wider text-white text-shadow-hard">Raio</span>
         </button>
     </div>
 
-    <!-- Modal Seleção de Nível -->
+    <div id="ability-hint" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black/60 px-6 py-3 rounded-full border border-white/20 shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+        <p class="text-white text-[10px] uppercase font-bold tracking-widest text-shadow-hard m-0">🔥 Clica no ecrã para ativar o poder!</p>
+    </div>
+
+    <!-- Modais -->
     <div id="level-selector-modal" class="absolute inset-0 bg-black/80 flex items-center justify-center hidden pointer-events-auto z-50 backdrop-blur-md transition-opacity">
         <div class="bg-gray-900/95 p-8 rounded-3xl border border-white/10 shadow-2xl text-center flex flex-col items-center max-w-sm w-full">
             <h3 class="text-xl font-bold text-yellow-400 mb-2 tracking-widest uppercase">Viajar para Fase</h3>
@@ -186,7 +199,7 @@
     </div>
 
     <div id="audio-toast" class="absolute top-24 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50">
-        Iniciando sistema de som...
+        Música pronta!
     </div>
 
     <div id="message-screen" class="absolute inset-0 bg-black/60 flex items-center justify-center hidden pointer-events-auto z-50 backdrop-blur-md transition-opacity">
@@ -201,190 +214,136 @@
 </div>
 
 <script>
-    // --- FUNÇÕES DA INTERFACE ---
-    function showLevelSelector() {
-        document.getElementById('level-selector-modal').classList.remove('hidden');
-        document.getElementById('level-input').value = currentLevel;
-        setTimeout(() => document.getElementById('level-input').focus(), 100);
+    // --- INTERFACE ---
+    function showLevelSelector() { 
+        document.getElementById('level-selector-modal').classList.remove('hidden'); 
+        document.getElementById('level-input').value = currentLevel; 
+        setTimeout(() => document.getElementById('level-input').focus(), 100); 
     }
     
-    function closeLevelSelector() {
-        document.getElementById('level-selector-modal').classList.add('hidden');
+    function closeLevelSelector() { 
+        document.getElementById('level-selector-modal').classList.add('hidden'); 
     }
     
     function jumpToLevel() {
         let val = parseInt(document.getElementById('level-input').value);
-        if (val >= 1 && val <= 100) {
-            currentLevel = val;
-            closeLevelSelector();
-            loadLevel(currentLevel);
-        } else {
-            document.getElementById('level-input').style.borderColor = 'red';
-            setTimeout(() => document.getElementById('level-input').style.borderColor = '#4b5563', 500);
+        if (val >= 1 && val <= 100) { 
+            currentLevel = val; 
+            closeLevelSelector(); 
+            loadLevel(currentLevel); 
+        } else { 
+            document.getElementById('level-input').style.borderColor = 'red'; 
+            setTimeout(() => document.getElementById('level-input').style.borderColor = '#4b5563', 500); 
         }
     }
 
-    // --- ENGENHARIA DE ÁUDIO "NUCLEAR" (Descodificação em Memória via Fetch) ---
-    // O URL raw.githubusercontent.com evita problemas de redireccionamento e de CORS
-    const BGM_URL = "https://raw.githubusercontent.com/lobocastler/Music_game/main/Beneath_the_Stone_Vault.mp3";
-    
+    // --- ÁUDIO NATIVO ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx = null;
-    let masterGain = null;
-    
-    let bgmGainNode = null;
-    let bgmBuffer = null;
-    let bgmSourceNode = null;
-    let isBgmLoading = false;
-    let isMuted = true;
-    
-    let bgmVolume = 0.20; 
+    let audioCtx = null; 
+    let masterGain = null; 
+    let bgmGainNode = null; 
+    let mediaSource = null;
+    let isMuted = true; 
+    let bgmVolume = 0.15; 
     let sfxVolume = 0.80; 
+    let bgmPlayer = document.getElementById('bgm-player');
 
     function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new AudioContext();
-            
-            masterGain = audioCtx.createGain();
-            masterGain.connect(audioCtx.destination);
-            masterGain.gain.value = 1.0;
-            
-            bgmGainNode = audioCtx.createGain();
-            bgmGainNode.gain.value = bgmVolume;
-            bgmGainNode.connect(masterGain); 
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-
-    // A Solução Definitiva: Vai buscar a música por Fetch e descodifica diretamente no motor!
-    async function loadAndPlayBGM() {
-        if (isBgmLoading || !audioCtx) return;
-        
-        // Se a música já estiver descarregada, só precisamos dar play
-        if (bgmBuffer) {
-            startBgmSource();
-            return;
-        }
-
-        isBgmLoading = true;
-        const toast = document.getElementById('audio-toast');
-        toast.innerText = "A descarregar música do GitHub (Aguarde...)";
-        toast.style.opacity = '1';
-
         try {
-            const response = await fetch(BGM_URL);
-            if (!response.ok) throw new Error("Erro de rede no Github");
-            
-            const arrayBuffer = await response.arrayBuffer();
-            bgmBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-            
-            toast.innerText = "Música pronta a bombar!";
-            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
-            
-            if (!isMuted) startBgmSource();
-            
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+                masterGain = audioCtx.createGain(); 
+                masterGain.connect(audioCtx.destination); 
+                masterGain.gain.value = 1.0;
+                
+                if (bgmPlayer && !mediaSource) {
+                    mediaSource = audioCtx.createMediaElementSource(bgmPlayer);
+                    bgmGainNode = audioCtx.createGain(); 
+                    bgmGainNode.gain.value = bgmVolume;
+                    mediaSource.connect(bgmGainNode); 
+                    bgmGainNode.connect(masterGain); 
+                }
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         } catch(e) {
-            console.error("Falha ao carregar BGM", e);
-            toast.innerText = "Falha ao carregar música externa.";
-            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
-        } finally {
-            isBgmLoading = false;
-        }
-    }
-
-    function startBgmSource() {
-        if (!bgmBuffer || isMuted || !audioCtx) return;
-        
-        if (bgmSourceNode) {
-            try { bgmSourceNode.stop(); } catch(e){}
-        }
-        
-        bgmSourceNode = audioCtx.createBufferSource();
-        bgmSourceNode.buffer = bgmBuffer;
-        bgmSourceNode.loop = true;
-        bgmSourceNode.connect(bgmGainNode);
-        bgmSourceNode.start(0);
-    }
-
-    function stopBgmSource() {
-        if (bgmSourceNode) {
-            try { bgmSourceNode.stop(); } catch(e){}
-            bgmSourceNode = null;
+            console.error("Erro na Iniciação do Audio", e);
         }
     }
 
     function toggleAudio() {
-        initAudio();
+        initAudio(); 
         isMuted = !isMuted;
-        
-        const btn = document.getElementById('btn-audio');
+        const btn = document.getElementById('btn-audio'); 
         const controls = document.getElementById('volume-controls');
         
         if (isMuted) {
-            btn.innerHTML = '🔇 Som Off';
-            btn.classList.replace('text-yellow-400', 'text-white/80');
+            btn.innerHTML = '🔇 Som Off'; 
+            btn.classList.replace('text-yellow-400', 'text-white/80'); 
             controls.classList.add('hidden');
-            
             if (masterGain && audioCtx) masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-            stopBgmSource();
-            
+            bgmPlayer.pause();
         } else {
-            btn.innerHTML = '🔊 Som On';
-            btn.classList.replace('text-white/80', 'text-yellow-400');
+            btn.innerHTML = '🔊 Som On'; 
+            btn.classList.replace('text-white/80', 'text-yellow-400'); 
             controls.classList.remove('hidden');
-            
             if (masterGain && audioCtx) masterGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
+            if (bgmGainNode && audioCtx) bgmGainNode.gain.setValueAtTime(bgmVolume, audioCtx.currentTime);
+            bgmPlayer.volume = bgmVolume; 
             
-            loadAndPlayBGM();
+            bgmPlayer.play().catch(e => { 
+                const toast = document.getElementById('audio-toast'); 
+                toast.innerText = "Clica no ecrã para iniciar a música!";
+                toast.style.opacity = '1'; 
+                setTimeout(() => toast.style.opacity = '0', 3500); 
+            });
             playImpactSound(80); 
         }
     }
 
-    // SLIDERS INDEPENDENTES PERFEITOS
-    function updateBgmVolume(val) {
-        bgmVolume = parseFloat(val);
-        if (bgmGainNode && audioCtx) {
-            bgmGainNode.gain.linearRampToValueAtTime(bgmVolume, audioCtx.currentTime + 0.1);
-        }
+    function updateBgmVolume(val) { 
+        bgmVolume = parseFloat(val); 
+        if (bgmGainNode && audioCtx) bgmGainNode.gain.linearRampToValueAtTime(bgmVolume, audioCtx.currentTime + 0.1); 
+        if (bgmPlayer) bgmPlayer.volume = bgmVolume; 
+    }
+    
+    function updateSfxVolume(val) { 
+        sfxVolume = parseFloat(val); 
     }
 
-    function updateSfxVolume(val) {
-        sfxVolume = parseFloat(val);
-    }
-
-    // SFX AGORA USAM sfxVolume EXCLUSIVAMENTE
     function playImpactSound(velocity) {
         if (isMuted || !audioCtx || !masterGain || sfxVolume === 0) return;
         try {
-            const vol = Math.min(Math.max(velocity / 40, 0.15), 0.6) * sfxVolume; 
+            const vol = Math.min(Math.max(velocity / 40, 0.1), 0.5) * sfxVolume; 
             const t = audioCtx.currentTime;
-
-            const osc = audioCtx.createOscillator();
+            
+            const osc = audioCtx.createOscillator(); 
             const oscGain = audioCtx.createGain();
             osc.type = 'triangle'; 
-            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.setValueAtTime(150, t); 
             osc.frequency.exponentialRampToValueAtTime(40, t + 0.1); 
-            oscGain.gain.setValueAtTime(vol, t);
+            oscGain.gain.setValueAtTime(vol, t); 
             oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-            osc.connect(oscGain); oscGain.connect(masterGain);
-            osc.start(t); osc.stop(t + 0.2);
-
+            osc.connect(oscGain); 
+            oscGain.connect(masterGain); 
+            osc.start(t); 
+            osc.stop(t + 0.2);
+            
+            const noise = audioCtx.createBufferSource();
             const bufferSize = audioCtx.sampleRate * 0.1; 
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
+            const data = buffer.getChannelData(0); 
             for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            
-            const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
-            const noiseFilter = audioCtx.createBiquadFilter();
-            noiseFilter.type = 'lowpass'; noiseFilter.frequency.setValueAtTime(800, t); 
-            
-            const noiseGain = audioCtx.createGain();
+            noise.buffer = buffer;
+            const noiseFilter = audioCtx.createBiquadFilter(); 
+            noiseFilter.type = 'lowpass'; 
+            noiseFilter.frequency.setValueAtTime(800, t); 
+            const noiseGain = audioCtx.createGain(); 
             noiseGain.gain.setValueAtTime(vol * 0.8, t); 
             noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.08); 
             
-            noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(masterGain);
+            noise.connect(noiseFilter); 
+            noiseFilter.connect(noiseGain); 
+            noiseGain.connect(masterGain); 
             noise.start(t);
         } catch(e) {}
     }
@@ -392,25 +351,24 @@
     function playDebrisSound(amount) {
         if (isMuted || !audioCtx || !masterGain || sfxVolume === 0) return;
         try {
-            const vol = Math.min(0.08 + (amount * 0.01), 0.4) * sfxVolume; 
-            const sampleRate = audioCtx.sampleRate || 44100;
-            const bufferSize = Math.floor(sampleRate * 0.15); 
+            const vol = Math.min(0.05 + (amount * 0.005), 0.3) * sfxVolume; 
+            const sampleRate = audioCtx.sampleRate || 44100; 
+            const bufferSize = Math.floor(sampleRate * 0.1); 
             const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
-            const data = buffer.getChannelData(0);
+            const data = buffer.getChannelData(0); 
             for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            
-            const noiseSource = audioCtx.createBufferSource();
+            const noiseSource = audioCtx.createBufferSource(); 
             noiseSource.buffer = buffer;
-            
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'bandpass';
+            const filter = audioCtx.createBiquadFilter(); 
+            filter.type = 'bandpass'; 
             filter.frequency.value = 1000 + Math.random() * 500; 
-            
-            const gainNode = audioCtx.createGain();
-            gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+            const gainNode = audioCtx.createGain(); 
+            gainNode.gain.setValueAtTime(vol, audioCtx.currentTime); 
             gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
             
-            noiseSource.connect(filter); filter.connect(gainNode); gainNode.connect(masterGain);
+            noiseSource.connect(filter); 
+            filter.connect(gainNode); 
+            gainNode.connect(masterGain); 
             noiseSource.start(audioCtx.currentTime);
         } catch(e) {}
     }
@@ -418,42 +376,42 @@
     function playExplosionSound() {
         if (isMuted || !audioCtx || !masterGain || sfxVolume === 0) return;
         try {
-            const sampleRate = audioCtx.sampleRate || 44100;
+            const sampleRate = audioCtx.sampleRate || 44100; 
             const bufferSize = Math.floor(sampleRate * 0.6); 
-            const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+            const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate); 
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            
-            const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
-            
-            const filter = audioCtx.createBiquadFilter();
+            const noise = audioCtx.createBufferSource(); 
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter(); 
             filter.type = 'lowpass'; 
-            filter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+            filter.frequency.setValueAtTime(2000, audioCtx.currentTime); 
             filter.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.4); 
-            
-            const gain = audioCtx.createGain();
+            const gain = audioCtx.createGain(); 
             gain.gain.setValueAtTime(0.8 * sfxVolume, audioCtx.currentTime); 
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
             
-            noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
+            noise.connect(filter); 
+            filter.connect(gain); 
+            gain.connect(masterGain); 
             noise.start(audioCtx.currentTime);
         } catch(e) {}
     }
 
-    // --- CONFIGURAÇÃO FÍSICA OTIMIZADA (Hyper-FPS) ---
+    // --- FÍSICA E MOTOR ---
     const { Engine, Render, Runner, World, Bodies, Body, Composite, Constraint, Events, Vector, Sleeping } = Matter;
 
-    const canvas = document.getElementById('gameCanvas');
+    const canvas = document.getElementById('gameCanvas'); 
     const ctx = canvas.getContext('2d');
-    const WIDTH = 1200;
+    const WIDTH = 1200; 
     const HEIGHT = 600;
 
     function resizeCanvas() {
         const scale = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT);
-        canvas.style.width = `${WIDTH * scale}px`;
+        canvas.style.width = `${WIDTH * scale}px`; 
         canvas.style.height = `${HEIGHT * scale}px`;
     }
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', resizeCanvas); 
     resizeCanvas();
 
     const engine = Engine.create({ enableSleeping: true }); 
@@ -462,38 +420,39 @@
     engine.gravity.y = 1.3; 
     engine.timing.timeScale = 0.85; 
 
-    const world = engine.world;
-    const runner = Runner.create({ isFixed: true });
+    const world = engine.world; 
+    const runner = Runner.create({ isFixed: true }); 
     Runner.run(runner, engine);
 
-    const CAT_DEFAULT = 0x0001;
-    const CAT_INTACT = 0x0002;
+    const CAT_DEFAULT = 0x0001; 
+    const CAT_INTACT = 0x0002; 
     const CAT_DEBRIS = 0x0004;
 
-    let currentLevel = 1;
+    let currentLevel = 1; 
     const maxLevels = 100;
     let gameState = 'playing'; 
     let currentWeapon = 'pedra';
-    let explosions = [];
+    let explosions = []; 
     let shockwaves = []; 
     let firedProjectiles = []; 
+    let activeEffects = []; 
     
-    let lastPath = [];
-    let currentPath = [];
-    let isFired = false;
+    let lastPath = []; 
+    let currentPath = []; 
+    let isFired = false; 
     let frameCount = 0;
     
-    let endTimer = null;
-    let winTimer = null;
+    let endTimer = null; 
+    let winTimer = null; 
     let createProjTimer = null;
     
     let currentBlockSize = 7; 
     let castleBlocks = []; 
-    let totalBlocksStart = 0;
+    let totalBlocksStart = 0; 
     let blocksDestroyed = 0;
-    let currentGoalPercentage = 0.35; 
-
-    let ammo = { pedra: 0, ferro: 0, bomba: 0 };
+    
+    let gameMode = { type: 'destruicao', goalPerc: 0.35, vipsTotal: 0, vipsDestroyed: 0, kingSafe: true };
+    let ammo = { pedra: 0, ferro: 0, bomba: 0, meteoro: 0, raio: 0 };
 
     const PALETTE = {
         'R': ['#e07a5f', '#d95b43', '#c2593f'],
@@ -501,112 +460,196 @@
         'D': ['#636363', '#5c5c5c', '#555555'],
         'W': ['#5c4033', '#4a3028'],
         'G': ['#1a1a1a', '#222222'],
-        'M': ['#4a7c59', '#3b6347']
+        'M': ['#4a7c59', '#3b6347'],
+        'T': ['#ef4444', '#dc2626'],
+        'L': ['#84cc16', '#a3e635'],
+        'I': ['#1e293b', '#111827'],
+        'V': ['#3b82f6', '#60a5fa'],
+        'K': ['#eab308', '#facc15'],
+        'E': ['#d4d4d8', '#e2e8f0'],
+        'A': ['#064e3b', '#0f766e']
     };
 
     const WEAPONS = {
         'pedra': { radius: 12, density: 0.04, restitution: 0.2, color: '#a8a9a6', type: 'circle' },
         'ferro': { radius: 16, density: 0.09, restitution: 0.05, color: '#222', type: 'circle' },
-        'bomba': { radius: 16, density: 0.05, restitution: 0.2, color: '#ef4444', type: 'circle' }
+        'bomba': { radius: 16, density: 0.05, restitution: 0.2, color: '#ef4444', type: 'circle' },
+        'meteoro': { radius: 14, density: 0.05, restitution: 0.1, color: '#a855f7', type: 'circle', ability: 'split' },
+        'raio': { radius: 11, density: 0.08, restitution: 0.0, color: '#22d3ee', type: 'circle', ability: 'boost' }
     };
 
     const anchor = { x: 160, y: 380 };
     let projectile = null; 
     let trackingProjectile = null; 
     let sling;
-    let isCatapultDragging = false;
-    let dragPosition = null;
+    let isCatapultDragging = false; 
+    let dragPosition = null; 
     let ground;
 
     const GROUND_Y = HEIGHT - 40; 
     const MAX_DRAG = 160; 
 
+    // Biomas: O Crepúsculo Mágico agora tem gravidade muito reduzida (0.25)
     const BIOMES = [
-        { name: 'Planícies Verdes', sky: ['#4facfe', '#00f2fe'], mountains: ['#3b5a4a', '#2b4a3c'], ground: '#1e2d24', sun: 'rgba(255,255,220,0.8)' },
-        { name: 'Inverno Rigoroso', sky: ['#a1c4fd', '#c2e9fb'], mountains: ['#9baebf', '#b0c4de'], ground: '#d0dae3', sun: 'rgba(255,255,255,0.9)' },
-        { name: 'Deserto Escaldante', sky: ['#ff9a44', '#fc6076'], mountains: ['#c4714b', '#a35431'], ground: '#8a4222', sun: 'rgba(255,230,150,0.8)' },
-        { name: 'Pântano Tóxico', sky: ['#16222a', '#3a6073'], mountains: ['#2c3d30', '#1c2a20'], ground: '#121a14', sun: 'rgba(150,255,150,0.2)' },
-        { name: 'Terras Vulcânicas', sky: ['#4b1248', '#f00000'], mountains: ['#3a1010', '#220505'], ground: '#140000', sun: 'rgba(255,100,50,0.6)' },
-        { name: 'Montanhas Nevadas', sky: ['#8e9eab', '#eef2f3'], mountains: ['#6b7b8c', '#8a9ba8'], ground: '#a2b1c2', sun: 'rgba(255,255,255,0.5)' },
-        { name: 'Crepúsculo Mágico', sky: ['#30142b', '#277da1'], mountains: ['#2d2136', '#1a1320'], ground: '#120d16', sun: 'rgba(200,200,255,0.7)' }
+        { name: 'Planícies Verdes', style: 'classic', sky: ['#4facfe', '#00f2fe'], mountains: ['#3b5a4a', '#2b4a3c'], ground: '#1e2d24', sun: 'rgba(255,255,220,0.8)', friction: 1, wind: 0, gravity: 1.3, effect: null },
+        { name: 'Inverno Rigoroso', style: 'classic', sky: ['#a1c4fd', '#c2e9fb'], mountains: ['#9baebf', '#b0c4de'], ground: '#d0dae3', sun: 'rgba(255,255,255,0.9)', friction: 0.01, wind: 0, gravity: 1.3, effect: '❄️ Gelo Escorregadio' },
+        { name: 'Deserto Escaldante', style: 'egyptian', sky: ['#ff9a44', '#fc6076'], mountains: ['#c4714b', '#a35431'], ground: '#8a4222', sun: 'rgba(255,230,150,0.8)', friction: 0.8, wind: 0, gravity: 1.3, effect: null },
+        { name: 'Pântano Tóxico', style: 'aztec', sky: ['#16222a', '#3a6073'], mountains: ['#2c3d30', '#1c2a20'], ground: '#121a14', sun: 'rgba(150,255,150,0.2)', friction: 1, wind: 0, gravity: 1.3, effect: null },
+        { name: 'Terras Vulcânicas', style: 'gothic', sky: ['#4b1248', '#f00000'], mountains: ['#3a1010', '#220505'], ground: '#140000', sun: 'rgba(255,100,50,0.6)', friction: 1, wind: 0, gravity: 1.3, effect: null },
+        { name: 'Montanhas Nevadas', style: 'chinese', sky: ['#8e9eab', '#eef2f3'], mountains: ['#6b7b8c', '#8a9ba8'], ground: '#a2b1c2', sun: 'rgba(255,255,255,0.5)', friction: 0.4, wind: 0.00015, gravity: 1.3, effect: '💨 Ventos Fortes' },
+        { name: 'Crepúsculo Mágico', style: 'chinese', sky: ['#30142b', '#277da1'], mountains: ['#2d2136', '#1a1320'], ground: '#120d16', sun: 'rgba(200,200,255,0.7)', friction: 1, wind: 0, gravity: 0.25, effect: '🌌 Baixa Gravidade' }
     ];
 
     let currentBiome = BIOMES[0];
-    const bgCanvas = document.createElement('canvas');
-    bgCanvas.width = WIDTH; bgCanvas.height = HEIGHT;
+    const bgCanvas = document.createElement('canvas'); 
+    bgCanvas.width = WIDTH; 
+    bgCanvas.height = HEIGHT; 
     const bgCtx = bgCanvas.getContext('2d');
 
     function preRenderBackground(level) {
-        const biomeIdx = Math.floor((level - 1) / 10) % BIOMES.length;
+        let biomeIdx = Math.floor((level - 1) / 10) % BIOMES.length;
         currentBiome = BIOMES[biomeIdx];
         
         document.getElementById('biome-name').innerText = currentBiome.name;
         
-        let grad = bgCtx.createLinearGradient(0, 0, 0, HEIGHT);
-        grad.addColorStop(0, currentBiome.sky[0]);
+        let styleDisplay = "Clássico";
+        if (currentBiome.style === 'egyptian') styleDisplay = "Egípcio";
+        else if (currentBiome.style === 'aztec') styleDisplay = "Asteca";
+        else if (currentBiome.style === 'chinese') styleDisplay = "Dinastia";
+        else if (currentBiome.style === 'gothic') styleDisplay = "Gótico";
+        document.getElementById('architecture-style').innerText = styleDisplay;
+        
+        if (currentBiome.effect) {
+            document.getElementById('biome-effect').innerText = currentBiome.effect;
+            document.getElementById('biome-effect').classList.remove('hidden');
+        } else {
+            document.getElementById('biome-effect').classList.add('hidden');
+        }
+        
+        let grad = bgCtx.createLinearGradient(0, 0, 0, HEIGHT); 
+        grad.addColorStop(0, currentBiome.sky[0]); 
         grad.addColorStop(1, currentBiome.sky[1]);
-        bgCtx.fillStyle = grad;
+        bgCtx.fillStyle = grad; 
         bgCtx.fillRect(0, 0, WIDTH, HEIGHT);
         
-        bgCtx.fillStyle = currentBiome.sun;
+        bgCtx.fillStyle = currentBiome.sun; 
         bgCtx.beginPath();
-        let sunX = 800 + Math.sin(level) * 200; 
-        let sunY = 150 + Math.cos(level) * 50;
-        bgCtx.arc(sunX, sunY, 70, 0, Math.PI*2);
+        bgCtx.arc(800 + Math.sin(level) * 200, 150 + Math.cos(level) * 50, 70, 0, Math.PI*2); 
         bgCtx.fill();
         
-        drawMountains(bgCtx, currentBiome.mountains[0], level * 10, 250, 150);
+        drawMountains(bgCtx, currentBiome.mountains[0], level * 10, 250, 150); 
         drawMountains(bgCtx, currentBiome.mountains[1], level * 20, 120, 100);
     }
 
     function drawMountains(context, color, seed, baseHeight, amplitude) {
-        context.fillStyle = color;
-        context.beginPath();
+        context.fillStyle = color; 
+        context.beginPath(); 
         context.moveTo(0, HEIGHT);
-        for(let x = 0; x <= WIDTH; x += 30) {
-            let y = HEIGHT - baseHeight - Math.sin(x*0.008 + seed)*amplitude - Math.sin(x*0.03 + seed*2)*(amplitude*0.3);
-            context.lineTo(x, y);
+        for (let x = 0; x <= WIDTH; x += 30) {
+            context.lineTo(x, HEIGHT - baseHeight - Math.sin(x*0.008 + seed)*amplitude - Math.sin(x*0.03 + seed*2)*(amplitude*0.3));
         }
-        context.lineTo(WIDTH, HEIGHT);
+        context.lineTo(WIDTH, HEIGHT); 
         context.fill();
     }
 
     function getCanvasPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
+        const rect = canvas.getBoundingClientRect(); 
+        const scaleX = canvas.width / rect.width; 
         const scaleY = canvas.height / rect.height;
-        let clientX = e.clientX, clientY = e.clientY;
-        if (e.touches && e.touches.length > 0) {
-            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+        let cX = e.clientX;
+        let cY = e.clientY; 
+        if (e.touches && e.touches.length > 0) { 
+            cX = e.touches[0].clientX; 
+            cY = e.touches[0].clientY; 
         }
-        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        return { x: (cX - rect.left) * scaleX, y: (cY - rect.top) * scaleY };
     }
 
-    canvas.addEventListener('touchstart', startDrag, { passive: false });
-    canvas.addEventListener('mousedown', startDrag);
-    canvas.addEventListener('touchmove', moveDrag, { passive: false });
+    canvas.addEventListener('touchstart', handleInputStart, { passive: false }); 
+    canvas.addEventListener('mousedown', handleInputStart);
+    canvas.addEventListener('touchmove', moveDrag, { passive: false }); 
     canvas.addEventListener('mousemove', moveDrag);
-    window.addEventListener('touchend', endDrag);
+    window.addEventListener('touchend', endDrag); 
     window.addEventListener('mouseup', endDrag);
 
-    function startDrag(e) {
-        if (gameState !== 'playing' || !sling || !sling.bodyB || !projectile) return;
+    // FUNÇÃO PARA ACORDAR BLOCOS PRÓXIMOS (Cadeia do Rei e Destroços)
+    function wakeUpNearbyBlocks(pos, radius) {
+        castleBlocks.forEach(b => {
+            if (b.isSleeping && !b.isStatic) {
+                if (Vector.magnitude(Vector.sub(b.position, pos)) < radius) {
+                    Sleeping.set(b, false);
+                }
+            }
+        });
+    }
+
+    function handleInputStart(e) {
+        if (gameState !== 'playing') return;
         
-        if(!audioCtx && !isMuted) initAudio(); 
+        if (!audioCtx && !isMuted) initAudio(); 
+        if (!isMuted && bgmPlayer && bgmPlayer.paused) bgmPlayer.play().catch(err=>{});
         
         const pos = getCanvasPos(e);
-        if (pos.x < WIDTH / 2) { 
+        
+        // Verifica todos os projéteis disparados no ar (corrige o bug do Meteoro)
+        let activeProj = firedProjectiles.find(p => p.weaponType && WEAPONS[p.weaponType].ability && !p.hasUsedAbility && p.speed > 1);
+        
+        if (activeProj) {
+            activateAbility(activeProj);
             if (e.type === 'touchstart') e.preventDefault();
-            isCatapultDragging = true;
+            return; 
+        }
+
+        if (pos.x < WIDTH / 2 && sling && sling.bodyB) { 
+            if (e.type === 'touchstart') e.preventDefault();
+            isCatapultDragging = true; 
             dragPosition = pos;
         }
     }
 
-    function moveDrag(e) {
-        if (isCatapultDragging) {
-            e.preventDefault();
-            dragPosition = getCanvasPos(e);
+    function activateAbility(proj) {
+        proj.hasUsedAbility = true;
+        document.getElementById('ability-hint').style.opacity = '0';
+        
+        const ability = WEAPONS[proj.weaponType].ability;
+        
+        if (ability === 'split') {
+            playImpactSound(100);
+            World.remove(world, proj); 
+            firedProjectiles = firedProjectiles.filter(p => p !== proj);
+            
+            for (let i = -1; i <= 1; i++) {
+                let tiny = Bodies.circle(proj.position.x, proj.position.y + (i*20), 8, {
+                    density: 0.06, 
+                    restitution: 0.1, 
+                    label: 'projétil',
+                    collisionFilter: { category: CAT_DEFAULT, mask: CAT_DEFAULT | CAT_INTACT | CAT_DEBRIS },
+                    render: { fillStyle: WEAPONS['meteoro'].color }, 
+                    weaponType: 'meteoro', 
+                    isFragment: true
+                });
+                Body.setVelocity(tiny, { x: proj.velocity.x * 1.2, y: proj.velocity.y + (i * 6) });
+                World.add(world, tiny); 
+                firedProjectiles.push(tiny);
+            }
+        } 
+        else if (ability === 'boost') {
+            playImpactSound(150);
+            let vel = Vector.magnitude(proj.velocity); 
+            let dir = Vector.normalise(proj.velocity);
+            Body.setVelocity(proj, { x: dir.x * (vel + 25), y: dir.y * (vel + 10) });
+            
+            for (let i = 0; i < 3; i++) {
+                explosions.push({ x: proj.position.x - dir.x*20, y: proj.position.y, radius: 10, maxRadius: 40 });
+            }
         }
+    }
+
+    function moveDrag(e) { 
+        if (isCatapultDragging) { 
+            e.preventDefault(); 
+            dragPosition = getCanvasPos(e); 
+        } 
     }
 
     function endDrag(e) {
@@ -615,32 +658,44 @@
             if (!projectile) return;
 
             const dist = Vector.magnitude(Vector.sub(projectile.position, anchor));
+            
             if (dist > 30 && ammo[currentWeapon] > 0) {
-                
-                sling.bodyB = null;
-                World.remove(world, sling);
+                sling.bodyB = null; 
+                World.remove(world, sling); 
                 Sleeping.set(projectile, false);
                 
-                isFired = true;
-                currentPath = [];
+                isFired = true; 
+                currentPath = []; 
                 trackingProjectile = projectile; 
                 
-                let firedProj = projectile;
-                firedProjectiles.push(firedProj);
+                firedProjectiles.push(projectile); 
                 projectile = null; 
                 
-                ammo[currentWeapon]--;
+                ammo[currentWeapon]--; 
                 updateAmmoUI();
-
-                setTimeout(() => { if (firedProj) firedProj.collisionFilter.group = 0; }, 100);
                 
-                if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+                setTimeout(() => { 
+                    if (trackingProjectile) trackingProjectile.collisionFilter.group = 0; 
+                }, 100);
                 
-                if (blocksDestroyed / totalBlocksStart < currentGoalPercentage) {
-                     checkAmmoStatus();
+                if (endTimer) { 
+                    clearTimeout(endTimer); 
+                    endTimer = null; 
                 }
                 
-                if (ammo.pedra > 0 || ammo.ferro > 0 || ammo.bomba > 0) {
+                if (WEAPONS[currentWeapon].ability) {
+                    const hint = document.getElementById('ability-hint');
+                    hint.innerText = currentWeapon === 'meteoro' ? "🔥 Clica para Dividir o Meteoro!" : "⚡ Clica para dar Impulso ao Raio!";
+                    hint.style.opacity = '1';
+                }
+
+                if (gameMode.type === 'destruicao' && blocksDestroyed / Math.max(1, totalBlocksStart) < gameMode.goalPerc) {
+                    checkAmmoStatus();
+                } else if (gameMode.type === 'vip' && gameMode.vipsDestroyed < gameMode.vipsTotal) {
+                    checkAmmoStatus();
+                }
+                
+                if (Object.values(ammo).some(v => v > 0)) {
                     createProjTimer = setTimeout(createProjectile, 1500); 
                 }
             }
@@ -648,26 +703,30 @@
     }
 
     Events.on(engine, 'beforeUpdate', () => {
-        firedProjectiles.forEach(p => {
-            const MAX_SPEED = 26; 
-            if (p.speed > MAX_SPEED) {
-                Body.setVelocity(p, Vector.mult(Vector.normalise(p.velocity), MAX_SPEED));
+        if (currentBiome.wind !== 0) {
+            Composite.allBodies(world).forEach(b => {
+                if (!b.isStatic && !b.isSleeping && b.label !== 'ground') {
+                    Body.applyForce(b, b.position, { x: currentBiome.wind * b.mass, y: 0 });
+                }
+            });
+        }
+        
+        firedProjectiles.forEach(p => { 
+            if (p.speed > 30) {
+                Body.setVelocity(p, Vector.mult(Vector.normalise(p.velocity), 30)); 
             }
         });
-
+        
         if (isCatapultDragging && projectile && sling && sling.bodyB) {
             let dragVec = Vector.sub(dragPosition, anchor);
             if (Vector.magnitude(dragVec) > MAX_DRAG) {
                 dragVec = Vector.mult(Vector.normalise(dragVec), MAX_DRAG);
             }
-            
             let targetPos = Vector.add(anchor, dragVec);
-            const weaponRadius = WEAPONS[currentWeapon].radius;
+            if (targetPos.y > GROUND_Y - 20) targetPos.y = GROUND_Y - 20; 
+            if (targetPos.x < 20) targetPos.x = 20;
             
-            if (targetPos.y > GROUND_Y - weaponRadius) targetPos.y = GROUND_Y - weaponRadius;
-            if (targetPos.x < weaponRadius) targetPos.x = weaponRadius;
-
-            Body.setPosition(projectile, targetPos);
+            Body.setPosition(projectile, targetPos); 
             Body.setVelocity(projectile, { x: 0, y: 0 });
         }
     });
@@ -675,89 +734,125 @@
     Events.on(engine, 'afterUpdate', () => {
         if (isFired && trackingProjectile && trackingProjectile.speed > 2 && trackingProjectile.position.y < GROUND_Y) {
             frameCount++;
-            if (frameCount % 4 === 0) {
-                currentPath.push({ x: trackingProjectile.position.x, y: trackingProjectile.position.y });
-                if (currentPath.length > 100) currentPath.shift();
+            if (frameCount % 4 === 0) { 
+                currentPath.push({ x: trackingProjectile.position.x, y: trackingProjectile.position.y }); 
+                if (currentPath.length > 100) currentPath.shift(); 
+            }
+            if (trackingProjectile.position.x > 800) {
+                document.getElementById('ability-hint').style.opacity = '0';
             }
         }
 
-        // Limpeza de Balas
+        if (!firedProjectiles.some(p => p.weaponType && WEAPONS[p.weaponType].ability && !p.hasUsedAbility)) {
+            document.getElementById('ability-hint').style.opacity = '0';
+        }
+
         for (let i = firedProjectiles.length - 1; i >= 0; i--) {
-            let p = firedProjectiles[i];
+            let p = firedProjectiles[i]; 
             if (p.label === 'bomba') continue; 
-
-            let outOfBounds = p.position.y > HEIGHT + 100 || p.position.x < -100 || p.position.x > WIDTH + 100;
-            if (outOfBounds) {
-                World.remove(world, p);
-                firedProjectiles.splice(i, 1);
-                continue;
+            
+            if (p.position.y > HEIGHT + 100 || p.position.x < -100 || p.position.x > WIDTH + 100) { 
+                World.remove(world, p); 
+                firedProjectiles.splice(i, 1); 
+                continue; 
             }
-
+            
             if (p.speed < 0.5) {
                 p.sinkTimer = (p.sinkTimer || 0) + 1;
                 if (p.sinkTimer > 90) { 
                     p.collisionFilter.mask = 0; 
-                    p.renderScale = (p.renderScale !== undefined ? p.renderScale : 1) - 0.03;
-                    
-                    if (p.renderScale <= 0) {
-                        World.remove(world, p);
-                        firedProjectiles.splice(i, 1);
+                    p.renderScale = (p.renderScale || 1) - 0.03;
+                    if (p.renderScale <= 0) { 
+                        World.remove(world, p); 
+                        firedProjectiles.splice(i, 1); 
                     }
                 }
-            } else {
+            } else { 
                 p.sinkTimer = 0; 
             }
         }
 
-        let newDestructions = 0;
+        let newDestructions = 0; 
+        let kingFailed = false;
+
         for (let i = castleBlocks.length - 1; i >= 0; i--) {
             const block = castleBlocks[i];
             
-            if (block.isVaporized) {
-                if (!block.customDestroyed) { block.customDestroyed = true; newDestructions++; }
-                World.remove(world, block);
-                castleBlocks.splice(i, 1);
-                continue;
+            // O REI NUNCA DORME (para ser afetado pela gravidade e apoio)
+            if (block.customType === 'K') {
+                Sleeping.set(block, false);
+                
+                // Se o rei cair ao chão (Perde a missão)
+                if (block.position.y > GROUND_Y - currentBlockSize * 2) { 
+                    kingFailed = true; 
+                    gameMode.kingSafe = false; 
+                }
+            }
+
+            // Fogo Espalha (Meteoro)
+            if (block.onFire && !block.isVaporized) {
+                block.renderScale = (block.renderScale || 1) - 0.015; 
+                if (Math.random() > 0.5) {
+                    activeEffects.push({ x: block.position.x + (Math.random()*12-6), y: block.position.y, type: 'fire', life: 1.0 });
+                }
+                if (block.renderScale <= 0.1) {
+                    block.isVaporized = true;
+                    wakeUpNearbyBlocks(block.position, currentBlockSize * 4); // Acorda o que estava em cima
+                }
+            }
+            // Ácido (Slime)
+            if (block.isMelted && !block.isVaporized) {
+                block.renderScale = (block.renderScale || 1) - 0.03; 
+                if (Math.random() > 0.4) {
+                    activeEffects.push({ x: block.position.x + (Math.random()*12-6), y: block.position.y + 4, type: 'acid', life: 1.0 });
+                }
+                if (block.renderScale <= 0.1) {
+                    block.isVaporized = true;
+                    wakeUpNearbyBlocks(block.position, currentBlockSize * 4); // Acorda o que estava em cima
+                }
             }
 
             let outOfBounds = block.position.y > HEIGHT + 100 || block.position.x < -100 || block.position.x > WIDTH + 100;
-            if (outOfBounds) {
-                if (!block.customDestroyed) { block.customDestroyed = true; newDestructions++; }
-                World.remove(world, block);
-                castleBlocks.splice(i, 1);
+            
+            if (block.isVaporized || outOfBounds) {
+                if (!block.customDestroyed) { 
+                    block.customDestroyed = true; 
+                    newDestructions++; 
+                    if (block.customType === 'V') gameMode.vipsDestroyed++; 
+                }
+                World.remove(world, block); 
+                castleBlocks.splice(i, 1); 
                 continue;
             }
 
             if (block.isSleeping && !block.customDestroyed) continue;
 
-            if (!block.customDestroyed) {
-                let dx = Math.abs(block.position.x - block.initialX);
-                let tilt = Math.abs(block.angle);
-
-                let tumbled = tilt > 0.8; 
-                let blownAway = dx > currentBlockSize * 5;
+            if (!block.customDestroyed && !block.isStatic) {
+                let dx = Math.abs(block.position.x - block.initialX); 
+                let tumbled = Math.abs(block.angle) > 0.8; 
+                let blownAway = dx > currentBlockSize * 5; 
                 let fellToGround = (block.position.y > GROUND_Y - currentBlockSize * 4) && (block.initialY < GROUND_Y - currentBlockSize * 12);
-
+                
                 if (tumbled || blownAway || fellToGround) {
-                    block.customDestroyed = true;
-                    // Debris não bate em Debris
-                    block.collisionFilter.category = CAT_DEBRIS;
-                    block.collisionFilter.mask = CAT_DEFAULT | CAT_INTACT; 
+                    block.customDestroyed = true; 
+                    if (block.customType === 'V') gameMode.vipsDestroyed++;
+                    if (block.customType !== 'K' && block.customType !== 'I') { 
+                        block.collisionFilter.category = CAT_DEBRIS; 
+                        block.collisionFilter.mask = CAT_DEFAULT | CAT_INTACT; 
+                    }
                     newDestructions++;
                 }
             }
 
-            if (block.customDestroyed) {
+            if (block.customDestroyed && block.customType !== 'I' && block.customType !== 'K') {
                 if (block.position.y > GROUND_Y - currentBlockSize * 5 && block.speed < 1.5) {
                     block.sinkTimer = (block.sinkTimer || 0) + 1;
-                    let maxWait = Math.max(10, 50 - Math.floor(currentLevel * 0.4));
-                    
-                    if (block.sinkTimer > maxWait) {
+                    if (block.sinkTimer > Math.max(10, 50 - Math.floor(currentLevel * 0.4))) {
                         block.collisionFilter.mask = 0; 
-                        block.renderScale = (block.renderScale !== undefined ? block.renderScale : 1) - 0.08;
-                        
+                        block.renderScale = (block.renderScale || 1) - 0.08;
                         if (block.renderScale <= 0) {
                             block.isVaporized = true;
+                            wakeUpNearbyBlocks(block.position, currentBlockSize * 4); // Desintegra e faz a base cair
                         }
                     }
                 } else {
@@ -766,110 +861,129 @@
             }
         }
 
+        if (kingFailed && gameState === 'playing') { 
+            gameState = 'waiting_result'; 
+            setTimeout(evaluateEndGame, 500); 
+        }
+
         if (newDestructions > 0) {
-            blocksDestroyed += newDestructions;
-            updateProgress();
+            blocksDestroyed += newDestructions; 
+            updateProgress(); 
             playDebrisSound(newDestructions);
             
-            if (blocksDestroyed / totalBlocksStart >= currentGoalPercentage && gameState === 'playing') {
-                if (endTimer) { clearTimeout(endTimer); endTimer = null; }
-                if (winTimer) { clearTimeout(winTimer); winTimer = null; }
-                gameState = 'waiting_result'; 
-                winTimer = setTimeout(evaluateEndGame, 1000); 
+            if (gameState === 'playing') {
+                let won = false;
+                if (gameMode.type === 'destruicao' || gameMode.type === 'rei') { 
+                    if (blocksDestroyed / Math.max(1, totalBlocksStart) >= gameMode.goalPerc && gameMode.kingSafe) won = true; 
+                } 
+                else if (gameMode.type === 'vip') { 
+                    if (gameMode.vipsDestroyed >= gameMode.vipsTotal) won = true; 
+                }
+                
+                if (won) { 
+                    if (endTimer) { clearTimeout(endTimer); endTimer = null; } 
+                    if (winTimer) { clearTimeout(winTimer); winTimer = null; } 
+                    gameState = 'waiting_result'; 
+                    winTimer = setTimeout(evaluateEndGame, 1000); 
+                }
             }
         }
     });
 
-    function setWeapon(type) {
-        if (ammo[type] <= 0 || gameState !== 'playing') return; 
-        currentWeapon = type;
-        document.querySelectorAll('.btn-weapon').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-${type}`).classList.add('active');
-        
-        if (sling && sling.bodyB && projectile) {
-            World.remove(world, projectile);
-            createProjectile();
-        }
-    }
-
-    function createProjectile() {
-        if (gameState !== 'playing') return;
-        
-        if (isFired && currentPath.length > 5) lastPath = [...currentPath];
-        isFired = false;
-        trackingProjectile = null; 
-        
-        if (ammo[currentWeapon] <= 0) {
-            if (ammo['pedra'] > 0) currentWeapon = 'pedra';
-            else if (ammo['ferro'] > 0 && currentLevel >= 20) currentWeapon = 'ferro';
-            else if (ammo['bomba'] > 0 && currentLevel >= 70) currentWeapon = 'bomba';
-            else return; 
-            
-            document.querySelectorAll('.btn-weapon').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`btn-${currentWeapon}`).classList.add('active');
-        }
-
-        const props = WEAPONS[currentWeapon];
-        const opts = {
-            density: props.density, restitution: props.restitution, friction: 0.8, frictionAir: 0.002,
-            label: currentWeapon === 'bomba' ? 'bomba' : 'projétil', 
-            collisionFilter: { category: CAT_DEFAULT, mask: CAT_DEFAULT | CAT_INTACT | CAT_DEBRIS }, 
-            render: { fillStyle: props.color },
-            hasImpacted: false,
-            renderScale: 1
-        };
-
-        projectile = props.type === 'rect' 
-            ? Bodies.rectangle(anchor.x, anchor.y, props.radius * 2, props.radius * 2, { ...opts, chamfer: { radius: 3 } })
-            : Bodies.circle(anchor.x, anchor.y, props.radius, opts);
-
-        sling = Constraint.create({ pointA: anchor, bodyB: projectile, stiffness: 0.022, damping: 0.1, length: 5, render: { visible: false } });
-        World.add(world, [projectile, sling]);
-    }
-
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach((pair) => {
-            if (pair.bodyA.label === 'bomba' && !pair.bodyA.triggered) triggerBomb(pair.bodyA);
-            else if (pair.bodyB.label === 'bomba' && !pair.bodyB.triggered) triggerBomb(pair.bodyB);
-            
-            let proj = null;
-            let block = null;
+            let bodyA = pair.bodyA;
+            let bodyB = pair.bodyB;
 
-            if (pair.bodyA.label === 'projétil' && pair.bodyB.label === 'castleBlock') { proj = pair.bodyA; block = pair.bodyB; }
-            else if (pair.bodyB.label === 'projétil' && pair.bodyA.label === 'castleBlock') { proj = pair.bodyB; block = pair.bodyA; }
+            [bodyA, bodyB].forEach(b => {
+                if (b.customType === 'T' && !b.triggered) {
+                    let other = (b === bodyA) ? bodyB : bodyA;
+                    if (other.speed > 5 || b.speed > 8) { 
+                        b.triggered = true; 
+                        triggerBomb(b, 100); 
+                    }
+                }
+            });
+
+            if (bodyA.label === 'bomba' && !bodyA.triggered) triggerBomb(bodyA, 130);
+            else if (bodyB.label === 'bomba' && !bodyB.triggered) triggerBomb(bodyB, 130);
+            
+            let proj = null; 
+            let block = null;
+            
+            if (bodyA.label === 'projétil' && bodyB.label === 'castleBlock') { proj = bodyA; block = bodyB; }
+            else if (bodyB.label === 'projétil' && bodyA.label === 'castleBlock') { proj = bodyB; block = bodyA; }
 
             if (proj && block) {
-                Sleeping.set(block, false); 
+                if (!block.isStatic) Sleeping.set(block, false); 
                 
+                // Meteoro Espalha Fogo (Em área de 3 a 4 blocos)
+                if (proj.weaponType === 'meteoro' && block.customType !== 'I') {
+                    const fireRadius = currentBlockSize * 3.5; 
+                    castleBlocks.forEach(b => {
+                        if (b.customType !== 'I' && !b.isVaporized) {
+                            if (Vector.magnitude(Vector.sub(b.position, block.position)) < fireRadius) {
+                                b.onFire = true;
+                                Sleeping.set(b, false); // Acorda-o para ele sentir que está a arder
+                            }
+                        }
+                    });
+                }
+                
+                // Slime larga Ácido
+                if (block.customType === 'L' && proj.speed > 3) {
+                    triggerAcid(block.position.x, block.position.y);
+                    block.isMelted = true;
+                }
+
                 if (!proj.hasImpacted && proj.speed > 5) {
-                    playImpactSound(proj.speed);
+                    playImpactSound(proj.speed); 
                     proj.hasImpacted = true;
-                    let type = (proj.circleRadius > 14) ? 'ferro' : 'pedra';
-                    createKineticShockwave(proj.position.x, proj.position.y, type);
+                    createKineticShockwave(proj.position.x, proj.position.y, proj.weaponType);
                 }
             }
         });
     });
 
-    function createKineticShockwave(x, y, type) {
-        const isFerro = type === 'ferro';
-        const radius = isFerro ? 110 : 70;
-        const coreRadius = isFerro ? 35 : 18; 
-        const force = isFerro ? 0.08 : 0.04;
+    function triggerAcid(x, y) {
+        playDebrisSound(20);
+        activeEffects.push({ x: x, y: y, type: 'acidSplash', life: 1.0 });
+        const radius = 80;
+        
+        castleBlocks.forEach(b => {
+            if (b.isVaporized || b.customType === 'I' || b.customType === 'K') return;
+            const dist = Math.sqrt(Math.pow(b.position.x - x, 2) + Math.pow(b.position.y - y, 2));
+            if (dist < radius) {
+                b.isMelted = true;
+                Sleeping.set(b, false);
+            }
+        });
+    }
+
+    function createKineticShockwave(x, y, weaponType) {
+        let radius = 70;
+        let coreRadius = 18;
+        let force = 0.04;
+        
+        if (weaponType === 'ferro') { radius = 110; coreRadius = 35; force = 0.08; }
+        if (weaponType === 'raio') { radius = 130; coreRadius = 40; force = 0.12; }
         
         shockwaves.push({ x: x, y: y, radius: 0, maxRadius: radius, alpha: 0.8 });
 
         castleBlocks.forEach(b => {
-            if (b.isStatic || b.collisionFilter.mask === 0 || b.isVaporized) return;
-            let dx = b.position.x - x;
+            if (b.collisionFilter.mask === 0 || b.isVaporized || b.customType === 'I') return;
+            
+            let dx = b.position.x - x; 
             let dy = b.position.y - y;
             if (Math.abs(dx) > radius || Math.abs(dy) > radius) return; 
 
             const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < coreRadius) {
+            
+            if (dist < coreRadius && b.customType !== 'K') {
                 b.isVaporized = true; 
+                wakeUpNearbyBlocks(b.position, currentBlockSize * 4); // Cai o que estiver por cima
             } else if (dist < radius) {
-                Sleeping.set(b, false); 
+                if (!b.isStatic) Sleeping.set(b, false); 
                 const forceDir = { x: dx/dist, y: dy/dist }; 
                 const magnitude = force * (1 - dist / radius) * b.mass; 
                 Body.applyForce(b, b.position, { x: forceDir.x * magnitude, y: forceDir.y * magnitude });
@@ -877,115 +991,215 @@
         });
     }
 
-    function triggerBomb(bombBody) {
-        bombBody.triggered = true;
+    function triggerBomb(bombBody, baseRadius) {
+        bombBody.triggered = true; 
         playExplosionSound();
+        
+        const tempoExplosao = bombBody.label === 'bomba' ? 800 : 50;
+        
         setTimeout(() => {
             if (!Composite.allBodies(world).includes(bombBody)) return; 
             
-            const radius = 130; 
-            const coreRadius = 45; 
+            const radius = baseRadius; 
+            const coreRadius = radius * 0.35; 
             const force = 0.25; 
-            const bx = bombBody.position.x, by = bombBody.position.y;
+            const bx = bombBody.position.x;
+            const by = bombBody.position.y;
+            
             explosions.push({ x: bx, y: by, radius: 0, maxRadius: radius });
 
             castleBlocks.forEach(b => {
-                if (b.isStatic || b.collisionFilter.mask === 0 || b.isVaporized) return;
-                let dx = b.position.x - bx;
+                if (b.collisionFilter.mask === 0 || b.isVaporized || b.customType === 'I') return;
+                
+                let dx = b.position.x - bx; 
                 let dy = b.position.y - by;
                 if (Math.abs(dx) > radius || Math.abs(dy) > radius) return;
-
+                
                 const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < coreRadius) {
+                if (dist < coreRadius && b.customType !== 'K') {
                     b.isVaporized = true; 
+                    wakeUpNearbyBlocks(b.position, currentBlockSize * 4);
                 } else if (dist < radius) {
-                    Sleeping.set(b, false); 
-                    const forceDir = { x: dx/dist, y: dy/dist };
+                    if (!b.isStatic) Sleeping.set(b, false); 
+                    const forceDir = { x: dx/dist, y: dy/dist }; 
                     const magnitude = force * (1 - dist / radius) * b.mass; 
                     Body.applyForce(b, b.position, { x: forceDir.x * magnitude, y: forceDir.y * magnitude });
                 }
             });
-            World.remove(world, bombBody);
-            firedProjectiles = firedProjectiles.filter(p => p !== bombBody);
-        }, 800); 
+            
+            World.remove(world, bombBody); 
+            firedProjectiles = firedProjectiles.filter(p => p !== bombBody); 
+            castleBlocks = castleBlocks.filter(b => b !== bombBody);
+            
+            wakeUpNearbyBlocks({ x: bx, y: by }, radius);
+            
+        }, tempoExplosao); 
     }
 
-    function generateLevelBlueprint(level) {
+    // --- ARQUITETURAS ---
+    function generateLevelBlueprint(level, style) {
         let cols = Math.min(25 + Math.floor(level * 0.55), 75);
         let rows = Math.min(25 + Math.floor(level * 0.4), 48);
-
         let grid = Array(rows).fill(null).map(() => Array(cols).fill(' '));
 
-        function fillRect(x, y, w, h, material) {
+        function fillRect(x, y, w, h, material) { 
             for(let r=y; r<y+h; r++) {
                 for(let c=x; c<x+w; c++) {
-                    if(r>=0 && r<rows && c>=0 && c<cols) grid[r][c] = material;
+                    if(r>=0 && r<rows && c>=0 && c<cols) {
+                        grid[r][c] = material;
+                    }
                 }
             }
         }
 
+        let wallMat = style === 'egyptian' ? 'E' : (style === 'aztec' ? 'A' : 'S');
+        let darkMat = style === 'egyptian' ? 'E' : (style === 'aztec' ? 'A' : 'D');
+        
         let wallHeight = 10 + Math.floor(level / 8);
-        fillRect(0, 0, cols, wallHeight, 'S');
-        for(let c=0; c<cols; c++) {
-            if(c%4 < 2) { 
-                if (wallHeight < rows) grid[wallHeight][c] = 'S';
-            }
-            grid[0][c] = 'D'; 
+        fillRect(0, 0, cols, wallHeight, wallMat);
+        for (let c=0; c<cols; c++) { 
+            if (c%4 < 2 && wallHeight < rows) grid[wallHeight][c] = wallMat; 
+            grid[0][c] = darkMat; 
         }
 
-        let numTowers = 1 + Math.floor(level / 12);
-        let towerWidth = 10 + Math.floor(level / 30);
-        if (towerWidth % 2 !== 0) towerWidth++; 
-        
+        if (style === 'egyptian') {
+            let pyrWidth = cols - 6; let pyrX = 3; let r = 0;
+            while (pyrWidth > 0 && r < rows) {
+                fillRect(pyrX, wallHeight + r, pyrWidth, 1, 'E');
+                if (r % 2 === 0 && Math.random() > 0.5) fillRect(pyrX, wallHeight + r, pyrWidth, 1, 'S'); 
+                pyrX += 1; pyrWidth -= 2; r++;
+            }
+            if (gameMode.type === 'rei') {
+                fillRect(Math.floor(cols/2), wallHeight + 4, 2, 2, 'K');
+            } else if(gameMode.type === 'vip') { 
+                fillRect(Math.floor(cols/2)-3, wallHeight + 6, 2, 2, 'V'); 
+                fillRect(Math.floor(cols/2)+2, wallHeight + 6, 2, 2, 'V'); 
+                gameMode.vipsTotal += 2; 
+            }
+            if (level > 20) { 
+                fillRect(Math.floor(cols/2)-5, wallHeight, 2, 2, 'T'); 
+                fillRect(Math.floor(cols/2)+4, wallHeight, 2, 2, 'T'); 
+            }
+        } 
+        else if (style === 'aztec') {
+            let stepW = Math.floor(cols / 1.5); let stepX = Math.floor((cols - stepW)/2); let r = wallHeight;
+            while (stepW > 4 && r < rows) {
+                fillRect(stepX, r, stepW, 4, 'A');
+                if (r<rows) grid[r][stepX] = 'M'; if (r<rows) grid[r][stepX+stepW-1] = 'M';
+                stepX += 3; stepW -= 6; r += 4;
+            }
+            if (gameMode.type === 'rei') fillRect(stepX + Math.floor(stepW/2) - 1, r, 2, 2, 'K'); 
+            if (gameMode.type === 'vip') { 
+                fillRect(stepX-2, r-4, 2, 2, 'V'); fillRect(stepX+stepW, r-4, 2, 2, 'V'); gameMode.vipsTotal += 2; 
+            }
+            if (level > 30) fillRect(stepX-4, 2, 2, 10, 'L'); 
+        }
+        else if (style === 'chinese') {
+            let numTowers = 1 + Math.floor(level / 15); let towerWidth = 8;
+            let spacing = Math.floor(cols / (numTowers + 1));
+            for (let i = 1; i <= numTowers; i++) {
+                let tx = (i * spacing) - Math.floor(towerWidth/2);
+                let th = wallHeight + 20 + Math.floor(level/3); 
+                if (th > rows - 6) th = rows - 6;
+                fillRect(tx, 0, towerWidth, th, 'D');
+                for (let hr = wallHeight; hr < th; hr += 8) {
+                    let rW = towerWidth + 6; let rX = tx - 3;
+                    fillRect(rX, hr, rW, 1, 'R'); grid[hr+1][rX] = 'R'; grid[hr+1][rX+rW-1] = 'R'; 
+                    if (gameMode.type === 'vip' && Math.random()>0.5) { fillRect(tx+Math.floor(towerWidth/2), hr+1, 2, 2, 'V'); gameMode.vipsTotal++; }
+                }
+                if (gameMode.type === 'rei' && i === Math.ceil(numTowers/2)) fillRect(tx+Math.floor(towerWidth/2)-1, th+1, 2, 2, 'K');
+            }
+        }
+        else if (style === 'gothic') {
+            let numTowers = 2 + Math.floor(level / 10); let towerWidth = 6;
+            let spacing = Math.floor(cols / (numTowers + 1));
+            for (let i = 1; i <= numTowers; i++) {
+                let tx = (i * spacing) - Math.floor(towerWidth/2); let th = rows - 2 - Math.floor(Math.random()*10);
+                fillRect(tx, 0, towerWidth, th, 'S');
+                fillRect(tx+2, 0, 2, th-8, 'I'); 
+                fillRect(tx+2, th, 2, 6, 'D');
+                if (level > 20 && Math.random() > 0.5) fillRect(tx, Math.floor(th/2), 2, 2, 'T'); 
+                if (gameMode.type === 'vip') { fillRect(tx+2, th-4, 2, 2, 'V'); gameMode.vipsTotal++; }
+                if (gameMode.type === 'rei' && i === Math.ceil(numTowers/2)) fillRect(tx+2, th-2, 2, 2, 'K');
+            }
+        }
+        else {
+            let numTowers = 1 + Math.floor(level / 12); let towerWidth = 10 + Math.floor(level / 30); if (towerWidth % 2 !== 0) towerWidth++; 
         let spacing = Math.floor(cols / (numTowers + 1));
         
-        for (let i = 1; i <= numTowers; i++) {
-            let tx = (i * spacing) - Math.floor(towerWidth/2);
-            let th = wallHeight + 12 + Math.floor(level/4) + (i % 2 === 0 ? 6 : 0);
-            if (th > rows - 12) th = rows - 12;
-            
-            fillRect(tx, 0, towerWidth, th, 'S');
-            
-            for (let r=0; r<th; r++) {
-                if (r<rows && tx>=0 && tx<cols) grid[r][tx] = 'D';
-                if (r<rows && tx+towerWidth-1>=0 && tx+towerWidth-1<cols) grid[r][tx+towerWidth-1] = 'D';
-            }
+        // --- NOVAS FASES DE PUZZLE/EQUILÍBRIO (Exceções Específicas) ---
+        if (level === 5 || level === 15 || level === 31 || level === 35 || level === 45 || level === 65 || level === 85) {
+            gameMode.type = (level === 45 || level === 85) ? 'rei' : 'destruicao';
+            gameMode.goalPerc = 0.8; // Exige quase destruição total, mas será fácil se acertar o ponto certo
 
-            let roofH = Math.floor(towerWidth / 2);
-            for (let j=0; j<=roofH; j++) {
-                let rw = towerWidth + 2 - (j*2);
-                let rx = tx - 1 + j;
-                let ry = th + j;
-                fillRect(rx, ry, rw, 1, 'R');
-            }
+            // Limpa as paredes base para fazer um castelo suspenso
+            fillRect(0, 0, cols, wallHeight, ' '); 
 
-            for (let r = 12; r < th - 6; r += 10) {
-                fillRect(tx + Math.floor(towerWidth/2) - 1, r, 2, 4, 'G');
+            let pilarW = 4;
+            let pilarH = 20;
+            let pilarX1 = Math.floor(cols * 0.3);
+            let pilarX2 = Math.floor(cols * 0.7) - pilarW;
+            let tetoY = pilarH;
+            
+            // Desenha os dois pilares fracos (Madeira)
+            fillRect(pilarX1, 0, pilarW, pilarH, 'W');
+            fillRect(pilarX2, 0, pilarW, pilarH, 'W');
+            
+            // Desenha a grande plataforma pesada por cima (Pedra)
+            fillRect(pilarX1 - 4, tetoY, (pilarX2 - pilarX1) + pilarW + 8, 4, 'S');
+            
+            // Adiciona a estrutura em cima da plataforma
+            fillRect(pilarX1, tetoY + 4, (pilarX2 - pilarX1) + pilarW, 8, 'D');
+            fillRect(Math.floor(cols/2) - 4, tetoY + 12, 8, 10, 'S'); // Torre central
+            fillRect(Math.floor(cols/2) - 6, tetoY + 22, 12, 4, 'R'); // Telhado
+            
+            if (level === 5) {
+                 // Nível tutorial de puzzle: TNT exposto no pilar
+                 fillRect(pilarX1 + 1, 5, 2, 2, 'T');
+            } else if (level === 15) {
+                // Inverno (Gelo): Requer escorregar a pedra por baixo
+                fillRect(pilarX2 + 1, 2, 2, 2, 'T'); 
+            } else if (level === 31 || level === 35) {
+                // TNT no meio dos dois pilares, precisa de um tiro perfeito no meio
+                fillRect(Math.floor(cols/2)-1, Math.floor(pilarH/2), 2, 2, 'T');
+            } else if (gameMode.type === 'rei') {
+                // Rei em cima da estrutura precária
+                fillRect(Math.floor(cols/2) - 1, tetoY + 26, 2, 2, 'K');
+            }
+        } 
+        // --- FIM DAS FASES DE PUZZLE ---
+        else {
+            for (let i = 1; i <= numTowers; i++) {
+                let tx = (i * spacing) - Math.floor(towerWidth/2); let th = wallHeight + 12 + Math.floor(level/4) + (i % 2 === 0 ? 6 : 0); if (th > rows - 12) th = rows - 12;
+                fillRect(tx, 0, towerWidth, th, 'S');
+                if (level > 40 && i%2===0) fillRect(tx+2, 0, 2, th-5, 'I');
+                for (let r=0; r<th; r++) { if (r<rows && tx>=0 && tx<cols) grid[r][tx] = 'D'; if (r<rows && tx+towerWidth-1>=0 && tx+towerWidth-1<cols) grid[r][tx+towerWidth-1] = 'D'; }
+                let roofH = Math.floor(towerWidth / 2);
+                for (let j=0; j<=roofH; j++) { let rw = towerWidth + 2 - (j*2); let rx = tx - 1 + j; let ry = th + j; fillRect(rx, ry, rw, 1, 'R'); }
+                if (level > 20 && Math.random() > 0.5) fillRect(tx + 2, Math.floor(th/2), 2, 2, 'T');
+                if (level > 30 && Math.random() > 0.7) fillRect(tx - 2, th - 5, 2, 8, 'L');
+                if (gameMode.type === 'rei' && i === Math.ceil(numTowers/2)) fillRect(tx + Math.floor(towerWidth/2) - 1, th + roofH + 1, 2, 2, 'K');
+                else if (gameMode.type === 'vip') { fillRect(tx + Math.floor(towerWidth/2) - 1, th - 2, 2, 2, 'V'); gameMode.vipsTotal++; }
             }
         }
 
         let gateX = Math.floor(cols/2) - 4;
         if (gateX > 0 && gateX + 8 < cols) {
-            fillRect(gateX, 0, 8, 8, 'W');
-            fillRect(gateX-1, 0, 1, 9, 'D'); 
-            fillRect(gateX+8, 0, 1, 9, 'D');
-            fillRect(gateX, 8, 8, 1, 'D');
+            fillRect(gateX, 0, 8, 8, 'W'); fillRect(gateX-1, 0, 1, 9, 'D'); fillRect(gateX+8, 0, 1, 9, 'D'); fillRect(gateX, 8, 8, 1, 'D');
         }
 
-        for(let c=0; c<cols; c++) {
-            if(grid[0][c] !== ' ' && Math.random() > 0.4) grid[0][c] = 'M';
-            if(grid[1][c] !== ' ' && Math.random() > 0.7) grid[1][c] = 'M';
-            if(grid[2][c] !== ' ' && Math.random() > 0.9) grid[2][c] = 'M';
+        for (let c=0; c<cols; c++) {
+            if (grid[0][c] !== ' ' && Math.random() > 0.4 && grid[0][c] !== 'I') grid[0][c] = 'M';
+            if (grid[1][c] !== ' ' && Math.random() > 0.7 && grid[1][c] !== 'I') grid[1][c] = 'M';
         }
 
-        grid.reverse(); 
-        return grid.map(row => row.join(''));
+        grid.reverse(); return grid.map(row => row.join(''));
     }
 
     function buildCastleFromBlueprint(blueprint, startX, startY) {
-        const rows = blueprint.length;
+        const rows = blueprint.length; 
         const cols = blueprint[0].length;
-        const gridHeight = rows * currentBlockSize;
+        const gridHeight = rows * currentBlockSize; 
         const adjustedStartY = startY - gridHeight;
 
         for (let r = 0; r < rows; r++) {
@@ -995,70 +1209,138 @@
                     const x = startX + (c * currentBlockSize) + (currentBlockSize / 2);
                     const y = adjustedStartY + (r * currentBlockSize) + (currentBlockSize / 2);
                     
-                    const colors = PALETTE[type];
-                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const colors = PALETTE[type]; 
+                    if (!colors) continue; 
                     
+                    const color = colors[Math.floor(Math.random() * colors.length)];
                     let density = 0.045; 
+                    let restitution = 0.0; 
+                    let isStatic = false; 
+                    let friction = currentBiome.friction;
+                    
+                    if (type === 'I') isStatic = true;
+                    if (type === 'T') density = 0.02; 
+                    if (type === 'K') { density = 0.2; restitution = 0.1; } 
+                    
+                    // O REI É O ÚNICO QUE NÃO COMEÇA A DORMIR
+                    const startsSleeping = type !== 'K' && !isStatic;
                     
                     const block = Bodies.rectangle(x, y, currentBlockSize, currentBlockSize, {
-                        density: density,
-                        friction: 0.9, 
+                        density: density, 
+                        restitution: restitution, 
+                        friction: friction, 
                         frictionStatic: 20, 
-                        restitution: 0.0, 
-                        isSleeping: true, 
+                        isStatic: isStatic,
+                        isSleeping: startsSleeping, 
                         label: 'castleBlock',
                         collisionFilter: { category: CAT_INTACT, mask: CAT_DEFAULT | CAT_INTACT | CAT_DEBRIS },
-                        render: { fillStyle: color },
+                        render: { fillStyle: color }, 
                         initialX: x, 
                         initialY: y,
-                        customDestroyed: false,
-                        sinkTimer: 0,
-                        renderScale: 1,
-                        isVaporized: false
+                        customDestroyed: false, 
+                        sinkTimer: 0, 
+                        renderScale: 1, 
+                        isVaporized: false, 
+                        customType: type, 
+                        triggered: false,
+                        onFire: false, 
+                        isMelted: false
                     });
                     
-                    castleBlocks.push(block);
+                    castleBlocks.push(block); 
                     World.add(world, block);
                 }
             }
         }
-        totalBlocksStart = castleBlocks.length;
-        blocksDestroyed = 0;
+        totalBlocksStart = castleBlocks.filter(b=> b.customType !== 'I').length; 
+        blocksDestroyed = 0; 
         updateProgress();
     }
 
-    function setupDifficultyAndAmmo(level) {
-        currentGoalPercentage = 0.35 + (0.45 * (level / 100));
-        let total = 7 + Math.floor(level / 4); 
-        
-        ammo.ferro = 0;
-        ammo.bomba = 0;
-        
-        if (level >= 70) { ammo.bomba = 1; if (level >= 95) ammo.bomba = 2; total -= ammo.bomba; }
-        if (level >= 20) { ammo.ferro = 1 + Math.floor((level - 20) / 8); total -= ammo.ferro; }
-
-        ammo.pedra = Math.max(1, total); 
-        
-        updateAmmoUI();
-        currentWeapon = ammo.pedra > 0 ? 'pedra' : (ammo.ferro > 0 ? 'ferro' : 'bomba');
+    function setupWeapon(type) {
+        if (ammo[type] <= 0 || gameState !== 'playing') return; 
+        currentWeapon = type;
         document.querySelectorAll('.btn-weapon').forEach(btn => btn.classList.remove('active'));
-        if (document.getElementById(`btn-${currentWeapon}`)) {
-            document.getElementById(`btn-${currentWeapon}`).classList.add('active');
+        const activeBtn = document.getElementById(`btn-${type}`);
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        if (sling && sling.bodyB && projectile) {
+            World.remove(world, projectile);
+            createProjectile();
         }
     }
 
+    function setWeapon(type) { setupWeapon(type); }
+
+    function createProjectile() {
+        if (gameState !== 'playing') return;
+        if (isFired && currentPath.length > 5) lastPath = [...currentPath];
+        isFired = false; trackingProjectile = null; 
+        
+        if (ammo[currentWeapon] <= 0) {
+            const priority = ['pedra', 'ferro', 'bomba', 'meteoro', 'raio'];
+            currentWeapon = priority.find(w => ammo[w] > 0);
+            if (!currentWeapon) return;
+            document.querySelectorAll('.btn-weapon').forEach(btn => btn.classList.remove('active'));
+            const btn = document.getElementById(`btn-${currentWeapon}`);
+            if(btn) btn.classList.add('active');
+        }
+
+        const props = WEAPONS[currentWeapon];
+        const opts = {
+            density: props.density, restitution: props.restitution, friction: 0.8, frictionAir: 0.002,
+            label: currentWeapon === 'bomba' ? 'bomba' : 'projétil', 
+            collisionFilter: { category: CAT_DEFAULT, mask: CAT_DEFAULT | CAT_INTACT | CAT_DEBRIS }, 
+            render: { fillStyle: props.color },
+            hasImpacted: false, renderScale: 1, weaponType: currentWeapon, hasUsedAbility: false
+        };
+
+        if (props.type === 'rect') projectile = Bodies.rectangle(anchor.x, anchor.y, props.radius * 2, props.radius * 2, { ...opts, chamfer: { radius: 3 } });
+        else projectile = Bodies.circle(anchor.x, anchor.y, props.radius, opts);
+
+        sling = Constraint.create({ pointA: anchor, bodyB: projectile, stiffness: 0.022, damping: 0.1, length: 5, render: { visible: false } });
+        World.add(world, [projectile, sling]);
+    }
+
+    function setupDifficultyAndAmmo(level) {
+        gameMode.goalPerc = 0.35 + (0.45 * (level / 100));
+        let total = 7 + Math.floor(level / 4); 
+        
+        ammo = { pedra: 0, ferro: 0, bomba: 0, meteoro: 0, raio: 0 };
+        
+        if (level >= 80) { ammo.raio = 1; if (level >= 95) ammo.raio = 2; total -= ammo.raio; }
+        if (level >= 45) { ammo.meteoro = 1; if (level >= 60) ammo.meteoro = 2; total -= ammo.meteoro; }
+        if (level >= 70) { ammo.bomba = 1; total -= ammo.bomba; }
+        
+        // MAIS FERRO A PARTIR DO 55 e 60
+        if (level >= 20) { ammo.ferro = 1 + Math.floor((level - 20) / 8); total -= ammo.ferro; }
+        if (level >= 55) { ammo.ferro += 1; total -= 1; }
+        if (level >= 60) { ammo.ferro += 3; total -= 3; }
+
+        ammo.pedra = Math.max(1, total); 
+        
+        if (level === 31 || level === 35) {
+            ammo = { pedra: 2, ferro: 0, bomba: 0, meteoro: 0, raio: 0 };
+            document.getElementById('objective-title').innerText = "Missão: Efeito Dominó";
+        }
+        
+        updateAmmoUI();
+        
+        const priority = ['pedra', 'ferro', 'bomba', 'meteoro', 'raio'];
+        currentWeapon = priority.find(w => ammo[w] > 0);
+        document.querySelectorAll('.btn-weapon').forEach(btn => btn.classList.remove('active'));
+        const currentBtn = document.getElementById(`btn-${currentWeapon}`);
+        if (currentBtn) currentBtn.classList.add('active');
+    }
+
     function updateAmmoUI() {
-        ['pedra', 'ferro', 'bomba'].forEach(w => {
-            const btn = document.getElementById(`btn-${w}`);
+        ['pedra', 'ferro', 'bomba', 'meteoro', 'raio'].forEach(w => {
+            const btn = document.getElementById(`btn-${w}`); 
             const badge = document.getElementById(`ammo-${w}`);
+            let unlockLvl = { 'ferro': 20, 'bomba': 70, 'meteoro': 45, 'raio': 80 };
             
-            if (w === 'ferro' && currentLevel < 20) {
-                badge.innerText = "🔒"; badge.style.background = "#4b5563";
-                btn.disabled = true; btn.classList.remove('active');
-            }
-            else if (w === 'bomba' && currentLevel < 70) {
-                badge.innerText = "🔒"; badge.style.background = "#4b5563";
-                btn.disabled = true; btn.classList.remove('active');
+            if (w !== 'pedra' && currentLevel < unlockLvl[w]) {
+                badge.innerText = "🔒"; badge.style.background = "#4b5563"; btn.disabled = true; btn.classList.remove('active');
             } else {
                 badge.innerText = ammo[w]; badge.style.background = "#ef4444";
                 if (ammo[w] <= 0) { btn.disabled = true; btn.classList.remove('active'); } 
@@ -1069,10 +1351,7 @@
 
     function checkAmmoStatus() {
         if (gameState !== 'playing') return;
-        if (ammo.pedra === 0 && ammo.ferro === 0 && ammo.bomba === 0) {
-            gameState = 'waiting_result';
-            endTimer = setTimeout(evaluateEndGame, 6000);
-        }
+        if (Object.values(ammo).every(v => v === 0)) { gameState = 'waiting_result'; endTimer = setTimeout(evaluateEndGame, 6000); }
     }
 
     function loadLevel(lvl) {
@@ -1081,263 +1360,211 @@
         if (winTimer) { clearTimeout(winTimer); winTimer = null; }
         if (createProjTimer) { clearTimeout(createProjTimer); createProjTimer = null; }
         
+        if (lvl % 10 === 0 && lvl > 20) gameMode.type = 'rei';
+        else if (lvl % 6 === 0 && lvl > 10) gameMode.type = 'vip';
+        else gameMode.type = 'destruicao';
+        
         document.getElementById('level-display').innerText = lvl;
         preRenderBackground(lvl);
         
+        // GRAVIDADE LUNAR NO CREPÚSCULO (0.25 vs 1.3 normal)
+        engine.gravity.y = currentBiome.gravity; 
+        
         currentBlockSize = lvl >= 80 ? 9 : (lvl >= 45 ? 8 : 7);
+        lastPath = []; currentPath = []; shockwaves = []; activeEffects = []; trackingProjectile = null; 
+        document.getElementById('ability-hint').style.opacity = '0';
         
-        lastPath = [];
-        currentPath = [];
-        shockwaves = []; 
-        trackingProjectile = null;
-        
-        castleBlocks.forEach(b => World.remove(world, b));
-        castleBlocks = [];
-        firedProjectiles.forEach(p => World.remove(world, p));
-        firedProjectiles = [];
-        explosions = [];
-        
-        if(sling) World.remove(world, sling);
-        if(projectile) { World.remove(world, projectile); projectile = null; }
+        castleBlocks.forEach(b => World.remove(world, b)); castleBlocks = [];
+        firedProjectiles.forEach(p => World.remove(world, p)); firedProjectiles = []; explosions = [];
+        if (sling) World.remove(world, sling); if (projectile) { World.remove(world, projectile); projectile = null; }
 
         if (!ground) {
             ground = Bodies.rectangle(WIDTH/2, HEIGHT - 20, WIDTH * 2, 40, { 
-                isStatic: true, label: 'ground', friction: 1,
-                collisionFilter: { category: CAT_DEFAULT, mask: CAT_DEFAULT | CAT_INTACT | CAT_DEBRIS }
+                isStatic: true, label: 'ground', friction: 1, collisionFilter: { category: CAT_DEFAULT, mask: CAT_DEFAULT | CAT_INTACT | CAT_DEBRIS }
             });
             World.add(world, [ground]);
         }
+        ground.friction = currentBiome.friction; 
 
         setupDifficultyAndAmmo(lvl);
-        const blueprint = generateLevelBlueprint(lvl);
+        const blueprint = generateLevelBlueprint(lvl, currentBiome.style);
         const castleWidth = blueprint[0].length * currentBlockSize;
         const startX = Math.max(450, WIDTH - castleWidth - 60); 
 
         buildCastleFromBlueprint(blueprint, startX, GROUND_Y);
         createProjectile();
+        updateObjectiveUI();
+    }
+
+    function updateObjectiveUI() {
+        const title = document.getElementById('objective-title');
+        if (gameMode.type === 'destruicao') title.innerText = "Missão: Destruição";
+        else if (gameMode.type === 'rei') title.innerText = "👑 Missão: Protege o Rei";
+        else if (gameMode.type === 'vip') title.innerText = "🔷 Missão: Aniquilar VIPs";
+        updateProgress();
     }
 
     function updateProgress() {
-        if (totalBlocksStart === 0) return;
-        const percentage = blocksDestroyed / totalBlocksStart;
-        const percentageInt = Math.min(100, Math.floor(percentage * 100));
-        const goalInt = Math.floor(currentGoalPercentage * 100);
-        
-        document.getElementById('progress-bar').style.width = `${percentageInt}%`;
-        document.getElementById('progress-text-value').innerHTML = `${percentageInt}% <span class="text-white/70 font-normal">/ ${goalInt}%</span>`;
-
-        if (percentage >= currentGoalPercentage) {
-            document.getElementById('progress-bar').style.backgroundColor = '#facc15'; 
-            document.getElementById('progress-bar').style.boxShadow = '0 0 8px rgba(250, 204, 21, 0.8)';
-        } else {
-            document.getElementById('progress-bar').style.backgroundColor = '#ef4444'; 
-            document.getElementById('progress-bar').style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.8)';
+        const bar = document.getElementById('progress-bar'); const text = document.getElementById('progress-text-value');
+        if (gameMode.type === 'destruicao' || gameMode.type === 'rei') {
+            if (totalBlocksStart === 0) return; const perc = blocksDestroyed / totalBlocksStart;
+            bar.style.width = `${Math.min(100, Math.floor(perc * 100))}%`;
+            text.innerHTML = `${Math.min(100, Math.floor(perc * 100))}% <span class="text-white/70 font-normal">/ ${Math.floor(gameMode.goalPerc * 100)}%</span>`;
+            
+            if (perc >= gameMode.goalPerc) { bar.style.backgroundColor = '#facc15'; bar.style.boxShadow = '0 0 8px rgba(250, 204, 21, 0.8)'; } 
+            else { bar.style.backgroundColor = '#ef4444'; bar.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.8)'; }
+        } 
+        else if (gameMode.type === 'vip') {
+            const perc = gameMode.vipsDestroyed / Math.max(1, gameMode.vipsTotal);
+            bar.style.width = `${Math.min(100, Math.floor(perc * 100))}%`;
+            text.innerHTML = `${gameMode.vipsDestroyed} VIP <span class="text-white/70 font-normal">/ ${gameMode.vipsTotal}</span>`;
+            
+            if (perc >= 1) { bar.style.backgroundColor = '#3b82f6'; bar.style.boxShadow = '0 0 8px rgba(59, 130, 246, 0.8)'; } 
+            else { bar.style.backgroundColor = '#ef4444'; bar.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.8)'; }
         }
     }
 
     function evaluateEndGame() {
         if (gameState !== 'waiting_result') return; 
         gameState = 'ended';
-        
-        const percentage = blocksDestroyed / totalBlocksStart;
-        const modal = document.getElementById('message-screen');
-        modal.classList.remove('hidden');
+        const modal = document.getElementById('message-screen'); modal.classList.remove('hidden');
+        let won = false; let msg = "";
 
-        if (percentage >= currentGoalPercentage) {
+        if (gameMode.type === 'destruicao') {
+            if (blocksDestroyed / Math.max(1, totalBlocksStart) >= gameMode.goalPerc) won = true; 
+            else msg = `Faltou munição! (${Math.floor((blocksDestroyed/totalBlocksStart)*100)}% de ${Math.floor(gameMode.goalPerc*100)}% exigido)`;
+        } else if (gameMode.type === 'vip') {
+            if (gameMode.vipsDestroyed >= gameMode.vipsTotal) won = true; 
+            else msg = "Deixaste alvos VIP escapar!";
+        } else if (gameMode.type === 'rei') {
+            if (!gameMode.kingSafe) { won = false; msg = "O Rei caiu no chão! Cuidado com a integridade da base."; } 
+            else if (blocksDestroyed / Math.max(1, totalBlocksStart) >= gameMode.goalPerc) won = true; 
+            else msg = `Faltou munição! Construção intacta.`;
+        }
+
+        if (won) {
             if (currentLevel === maxLevels) {
-                document.getElementById('msg-title').innerText = "CONQUISTA TOTAL!";
-                document.getElementById('msg-title').className = "text-5xl font-bold text-yellow-400 mb-3 tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]";
-                document.getElementById('msg-desc').innerText = "Venceste os 100 castelos épicos!";
-                document.getElementById('msg-btn').innerText = "REINICIAR CAMPANHA";
-                document.getElementById('msg-btn').onclick = () => { currentLevel = 1; retryLevel(); };
+                document.getElementById('msg-title').innerText = "CONQUISTA TOTAL!"; document.getElementById('msg-desc').innerText = "Venceste os 100 castelos épicos!";
+                document.getElementById('msg-btn').innerText = "REINICIAR CAMPANHA"; document.getElementById('msg-btn').onclick = () => { currentLevel = 1; retryLevel(); };
             } else {
-                document.getElementById('msg-title').innerText = "VITÓRIA!";
-                document.getElementById('msg-title').className = "text-4xl font-bold text-green-400 mb-3 tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]";
-                document.getElementById('msg-desc').innerText = "A fortaleza ruiu perante o teu ataque.";
-                document.getElementById('msg-btn').innerText = "PRÓXIMO NÍVEL";
-                document.getElementById('msg-btn').onclick = nextLevel;
+                document.getElementById('msg-title').innerText = "VITÓRIA!"; document.getElementById('msg-title').className = "text-4xl font-bold text-green-400 mb-3 tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]";
+                document.getElementById('msg-desc').innerText = "Missão cumprida com sucesso!"; document.getElementById('msg-btn').innerText = "PRÓXIMO NÍVEL"; document.getElementById('msg-btn').onclick = nextLevel;
             }
         } else {
-            document.getElementById('msg-title').innerText = "DERROTA!";
-            document.getElementById('msg-title').className = "text-4xl font-bold text-red-500 mb-3 tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]";
-            document.getElementById('msg-desc').innerText = `Faltou munição! (${Math.floor(percentage*100)}% de ${Math.floor(currentGoalPercentage*100)}% exigido)`;
-            document.getElementById('msg-btn').innerText = "TENTAR NOVAMENTE";
-            document.getElementById('msg-btn').onclick = retryLevel;
+            document.getElementById('msg-title').innerText = "DERROTA!"; document.getElementById('msg-title').className = "text-4xl font-bold text-red-500 mb-3 tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]";
+            document.getElementById('msg-desc').innerText = msg; document.getElementById('msg-btn').innerText = "TENTAR NOVAMENTE"; document.getElementById('msg-btn').onclick = retryLevel;
         }
     }
 
-    function retryLevel() {
-        document.getElementById('message-screen').classList.add('hidden');
-        loadLevel(currentLevel);
-    }
-    
-    function nextLevel() {
-        document.getElementById('message-screen').classList.add('hidden');
-        currentLevel++;
-        loadLevel(currentLevel);
-    }
-    
-    function handleEndScreenBtn() {
-        document.getElementById('msg-btn').onclick();
-    }
+    function retryLevel() { document.getElementById('message-screen').classList.add('hidden'); loadLevel(currentLevel); }
+    function nextLevel() { document.getElementById('message-screen').classList.add('hidden'); currentLevel++; loadLevel(currentLevel); }
+    function handleEndScreenBtn() { document.getElementById('msg-btn').onclick(); }
 
     function render() {
-        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        ctx.clearRect(0, 0, WIDTH, HEIGHT); 
         ctx.drawImage(bgCanvas, 0, 0);
 
-        ctx.fillStyle = currentBiome.ground; 
-        ctx.fillRect(0, HEIGHT - 40, WIDTH, 40);
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(0, HEIGHT - 40); ctx.lineTo(WIDTH, HEIGHT - 40); ctx.stroke();
-
-        ctx.fillStyle = '#2c1e16';
-        ctx.fillRect(anchor.x - 20, anchor.y + 20, 40, 160);
-        ctx.strokeRect(anchor.x - 20, anchor.y + 20, 40, 160);
+        ctx.fillStyle = currentBiome.ground; ctx.fillRect(0, HEIGHT - 40, WIDTH, 40);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, HEIGHT - 40); ctx.lineTo(WIDTH, HEIGHT - 40); ctx.stroke();
+        
+        ctx.fillStyle = '#2c1e16'; ctx.fillRect(anchor.x - 20, anchor.y + 20, 40, 160); ctx.strokeRect(anchor.x - 20, anchor.y + 20, 40, 160);
 
         if (lastPath.length > 1) {
-            ctx.beginPath();
-            ctx.setLineDash([4, 6]); 
-            ctx.moveTo(lastPath[0].x, lastPath[0].y);
-            for(let i = 1; i < lastPath.length; i++) {
-                ctx.lineTo(lastPath[i].x, lastPath[i].y);
-            }
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.setLineDash([]); 
+            ctx.beginPath(); ctx.setLineDash([4, 6]); ctx.moveTo(lastPath[0].x, lastPath[0].y);
+            for (let i = 1; i < lastPath.length; i++) ctx.lineTo(lastPath[i].x, lastPath[i].y);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]); 
         }
 
         if (sling && sling.bodyB && gameState === 'playing' && projectile) {
-            ctx.beginPath(); ctx.moveTo(anchor.x - 10, anchor.y); ctx.lineTo(projectile.position.x, projectile.position.y);
-            ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(anchor.x - 10, anchor.y); ctx.lineTo(projectile.position.x, projectile.position.y); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.stroke();
         }
 
         for (let i = 0; i < castleBlocks.length; i++) {
-            const body = castleBlocks[i];
-            let renderScale = body.renderScale || 1;
-            let currentSize = currentBlockSize * renderScale;
-            let s = currentSize / 2;
-
+            const body = castleBlocks[i]; let renderScale = body.renderScale || 1; let currentSize = currentBlockSize * renderScale; let s = currentSize / 2;
             ctx.fillStyle = body.render.fillStyle;
 
             let alpha = 1.0;
-            if (body.collisionFilter.mask === 0) {
-                alpha = Math.max(0, renderScale);
-            }
+            if (body.collisionFilter.mask === 0) alpha = Math.max(0, renderScale);
 
             if (Math.abs(body.angle) < 0.01) {
-                if (alpha < 1.0) ctx.globalAlpha = alpha;
-                ctx.fillRect(body.position.x - s + 0.5, body.position.y - s + 0.5, currentSize - 1, currentSize - 1);
+                if (alpha < 1.0) ctx.globalAlpha = alpha; 
+                ctx.fillRect(body.position.x - s + 0.5, body.position.y - s + 0.5, currentSize - 1, currentSize - 1); 
                 if (alpha < 1.0) ctx.globalAlpha = 1.0;
-            } 
-            else {
-                ctx.save();
-                ctx.translate(body.position.x, body.position.y);
-                ctx.rotate(body.angle);
-                if (alpha < 1.0) ctx.globalAlpha = alpha;
-                ctx.fillRect(-s + 0.5, -s + 0.5, currentSize - 1, currentSize - 1);
+            } else {
+                ctx.save(); ctx.translate(body.position.x, body.position.y); ctx.rotate(body.angle);
+                if (alpha < 1.0) ctx.globalAlpha = alpha; 
+                ctx.fillRect(-s + 0.5, -s + 0.5, currentSize - 1, currentSize - 1); 
                 ctx.restore();
             }
+            
+            if (body.customType === 'K' && alpha === 1.0) { ctx.fillStyle = '#fff'; ctx.fillRect(body.position.x - 2, body.position.y - s - 4, 4, 4); } 
+            if (body.customType === 'T' && alpha === 1.0) { ctx.fillStyle = '#111'; ctx.fillRect(body.position.x - s/2, body.position.y - 1, currentSize/2, 2); } 
         }
 
         const drawProjectile = (p) => {
-            if(!p) return;
-            ctx.save();
-            ctx.translate(p.position.x, p.position.y);
-            if (p.angle !== 0) ctx.rotate(p.angle);
-            
-            let renderScale = p.renderScale !== undefined ? p.renderScale : 1;
-            const r = (p.circleRadius || 12) * renderScale;
-            
-            if (p.collisionFilter && p.collisionFilter.mask === 0) {
-                ctx.globalAlpha = Math.max(0, renderScale);
-            }
+            if (!p) return; ctx.save(); ctx.translate(p.position.x, p.position.y); if (p.angle !== 0) ctx.rotate(p.angle);
+            let renderScale = p.renderScale !== undefined ? p.renderScale : 1; const r = (p.circleRadius || 12) * renderScale;
+            if (p.collisionFilter && p.collisionFilter.mask === 0) ctx.globalAlpha = Math.max(0, renderScale);
 
             ctx.fillStyle = p.render.fillStyle;
-            
-            if (p.circleRadius !== undefined) { 
-                ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#111'; ctx.lineWidth = 2 * renderScale; ctx.stroke();
-            } else {
-                ctx.fillRect(-r, -r, r*2, r*2);
-                ctx.strokeStyle = '#111'; ctx.lineWidth = 2 * renderScale; ctx.strokeRect(-r, -r, r*2, r*2);
-            }
+            if (p.circleRadius !== undefined) { ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 2 * renderScale; ctx.stroke(); } 
+            else { ctx.fillRect(-r, -r, r*2, r*2); ctx.strokeStyle = '#111'; ctx.lineWidth = 2 * renderScale; ctx.strokeRect(-r, -r, r*2, r*2); }
 
             if (p.label === 'bomba') {
                 ctx.fillStyle = '#111'; ctx.fillRect(-2 * renderScale, -r - 4 * renderScale, 4 * renderScale, 4 * renderScale);
-                if (p.triggered && Math.floor(Date.now() / 100) % 2 === 0) {
-                    ctx.fillStyle = '#facc15'; ctx.fillRect(-4 * renderScale, -r - 8 * renderScale, 8 * renderScale, 8 * renderScale);
-                }
+                if (p.triggered && Math.floor(Date.now() / 100) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillRect(-4 * renderScale, -r - 8 * renderScale, 8 * renderScale, 8 * renderScale); }
             }
+            if (p.weaponType === 'meteoro') { ctx.fillStyle = 'rgba(168, 85, 247, 0.4)'; ctx.beginPath(); ctx.arc(0, 0, r*1.5, 0, Math.PI * 2); ctx.fill(); }
+            if (p.weaponType === 'raio') { ctx.fillStyle = 'rgba(34, 211, 238, 0.5)'; ctx.beginPath(); ctx.arc(0, 0, r*1.3, 0, Math.PI * 2); ctx.fill(); }
             ctx.restore();
         };
 
-        if (projectile) drawProjectile(projectile);
-        firedProjectiles.forEach(drawProjectile);
+        if (projectile) drawProjectile(projectile); firedProjectiles.forEach(drawProjectile);
 
         if (sling && sling.bodyB && gameState === 'playing' && projectile) {
-            ctx.beginPath(); ctx.moveTo(anchor.x + 10, anchor.y); ctx.lineTo(projectile.position.x, projectile.position.y);
-            ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.stroke();
-            ctx.fillStyle = '#2c1e16';
-            ctx.fillRect(projectile.position.x - 8, projectile.position.y - 10, 16, 20);
+            ctx.beginPath(); ctx.moveTo(anchor.x + 10, anchor.y); ctx.lineTo(projectile.position.x, projectile.position.y); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.stroke();
+            ctx.fillStyle = '#2c1e16'; ctx.fillRect(projectile.position.x - 8, projectile.position.y - 10, 16, 20);
         }
 
         if (isCatapultDragging && projectile && sling && sling.bodyB) {
-            let dragVec = Vector.sub(dragPosition, anchor);
-            let dist = Math.min(Vector.magnitude(dragVec), MAX_DRAG);
-            let percent = dist / MAX_DRAG;
+            let dragVec = Vector.sub(dragPosition, anchor); let dist = Math.min(Vector.magnitude(dragVec), MAX_DRAG); let percent = dist / MAX_DRAG;
+            const barW = 60; const barH = 4; const barX = anchor.x - barW / 2; const barY = anchor.y - 35;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(barX, barY, barW, barH, 2); else ctx.rect(barX, barY, barW, barH); ctx.fill();
+            ctx.fillStyle = `hsl(${120 - (percent * 120)}, 100%, 60%)`; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(barX, barY, barW * percent, barH, 2); else ctx.rect(barX, barY, barW * percent, barH); ctx.fill();
+        }
 
-            const barW = 60;
-            const barH = 4; 
-            const barX = anchor.x - barW / 2;
-            const barY = anchor.y - 35;
-
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.beginPath();
-            if(ctx.roundRect) ctx.roundRect(barX, barY, barW, barH, 2); else ctx.rect(barX, barY, barW, barH);
-            ctx.fill();
-
-            ctx.fillStyle = `hsl(${120 - (percent * 120)}, 100%, 60%)`;
-            ctx.beginPath();
-            if(ctx.roundRect) ctx.roundRect(barX, barY, barW * percent, barH, 2); else ctx.rect(barX, barY, barW * percent, barH);
-            ctx.fill();
+        for (let i = activeEffects.length - 1; i >= 0; i--) {
+            let ef = activeEffects[i]; ef.life -= 0.05;
+            if (ef.life > 0) {
+                if(ef.type === 'fire') {
+                    ctx.fillStyle = `rgba(168, 85, 247, ${ef.life})`; ctx.fillRect(ef.x, ef.y - (1-ef.life)*20, 6, 6);
+                } else if(ef.type === 'acid') {
+                    ctx.fillStyle = `rgba(132, 204, 22, ${ef.life})`; ctx.beginPath(); ctx.arc(ef.x, ef.y + (1-ef.life)*10, 3, 0, Math.PI*2); ctx.fill();
+                } else if(ef.type === 'acidSplash') {
+                    ctx.fillStyle = `rgba(132, 204, 22, ${ef.life*0.5})`; ctx.beginPath(); ctx.arc(ef.x, ef.y, (1-ef.life)*60, 0, Math.PI*2); ctx.fill();
+                }
+            } else activeEffects.splice(i, 1);
         }
 
         for (let i = shockwaves.length - 1; i >= 0; i--) {
-            let sw = shockwaves[i];
-            sw.radius += 12;
-            sw.alpha -= 0.08;
-            
+            let sw = shockwaves[i]; sw.radius += 12; sw.alpha -= 0.08;
             if (sw.alpha > 0) {
-                const size = sw.radius * 0.4;
-                ctx.fillStyle = `rgba(180, 180, 180, ${sw.alpha})`;
-                ctx.fillRect(sw.x - size/2, sw.y - size/2, size, size);
-                ctx.fillStyle = `rgba(150, 150, 150, ${sw.alpha * 0.7})`;
-                ctx.fillRect(sw.x - size*0.8, sw.y - size*0.3, size, size);
-            } else {
-                shockwaves.splice(i, 1);
-            }
+                const size = sw.radius * 0.4; ctx.fillStyle = `rgba(180, 180, 180, ${sw.alpha})`; ctx.fillRect(sw.x - size/2, sw.y - size/2, size, size);
+                ctx.fillStyle = `rgba(150, 150, 150, ${sw.alpha * 0.7})`; ctx.fillRect(sw.x - size*0.8, sw.y - size*0.3, size, size);
+            } else shockwaves.splice(i, 1);
         }
 
         for (let i = explosions.length - 1; i >= 0; i--) {
-            let exp = explosions[i];
-            exp.radius += 30;
-            
-            const size = exp.radius;
-            ctx.fillStyle = `rgba(239, 68, 68, ${1 - (exp.radius / exp.maxRadius)})`;
-            ctx.fillRect(exp.x - size/2, exp.y - size/2, size, size);
-            
-            ctx.fillStyle = `rgba(250, 204, 21, ${1 - (exp.radius / exp.maxRadius)})`;
-            ctx.fillRect(exp.x - size/3, exp.y - size/3, size/1.5, size/1.5);
-
+            let exp = explosions[i]; exp.radius += 30; const size = exp.radius;
+            ctx.fillStyle = `rgba(239, 68, 68, ${1 - (exp.radius / exp.maxRadius)})`; ctx.fillRect(exp.x - size/2, exp.y - size/2, size, size);
+            ctx.fillStyle = `rgba(250, 204, 21, ${1 - (exp.radius / exp.maxRadius)})`; ctx.fillRect(exp.x - size/3, exp.y - size/3, size/1.5, size/1.5);
             if (exp.radius >= exp.maxRadius) explosions.splice(i, 1);
         }
 
         requestAnimationFrame(render);
     }
 
-    loadLevel(1);
-    render();
+    loadLevel(1); render();
 </script>
 </body>
 </html>
