@@ -72,7 +72,7 @@
             text-shadow: 0px 2px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.9);
         }
 
-        /* Estilo para o Slider de Volume */
+        /* Estilos do Slider */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -103,15 +103,28 @@
     <!-- Interface (Topo Esquerdo) -->
     <div class="absolute top-6 left-8 pointer-events-none z-10 flex flex-col gap-3">
         <div class="flex flex-col">
-            <div class="flex items-center gap-3 mb-[-2px] pointer-events-auto">
-                <p id="biome-name" class="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase text-shadow-hard m-0">Planícies Verdes</p>
+            <div class="flex items-center gap-2 mb-[-2px] pointer-events-auto">
+                <p id="biome-name" class="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase text-shadow-hard m-0 mr-2">Planícies Verdes</p>
+                
                 <button id="btn-audio" onclick="toggleAudio()" class="bg-black/50 hover:bg-black/80 text-white/80 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded border border-white/20 transition cursor-pointer shadow-md">
                     🔇 Som Off
                 </button>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="updateVolume(this.value)" class="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer hidden shadow-inner">
+                
+                <!-- PAINEL COM DOIS CONTROLOS DE VOLUME -->
+                <div id="volume-controls" class="hidden flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm">
+                    <div class="flex items-center gap-1.5" title="Volume da Música">
+                        <span class="text-[11px]">🎵</span>
+                        <input type="range" id="bgm-slider" min="0" max="1" step="0.05" value="0.2" oninput="updateBgmVolume(this.value)" class="w-16 h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer shadow-inner">
+                    </div>
+                    <div class="w-px h-4 bg-white/20"></div>
+                    <div class="flex items-center gap-1.5" title="Volume dos Efeitos">
+                        <span class="text-[11px]">💥</span>
+                        <input type="range" id="sfx-slider" min="0" max="1" step="0.05" value="0.8" oninput="updateSfxVolume(this.value)" class="w-16 h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer shadow-inner">
+                    </div>
+                </div>
             </div>
             
-            <div class="flex items-baseline gap-2">
+            <div class="flex items-baseline gap-2 mt-1">
                 <h1 class="text-[3.5rem] text-white font-black m-0 leading-none tracking-tight text-shadow-hard">
                     LVL <span id="level-display" class="text-yellow-400">1</span>
                 </h1>
@@ -173,7 +186,7 @@
     </div>
 
     <div id="audio-toast" class="absolute top-24 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50">
-        Desliga o modo silêncio do telemóvel!
+        Iniciando sistema de som...
     </div>
 
     <div id="message-screen" class="absolute inset-0 bg-black/60 flex items-center justify-center hidden pointer-events-auto z-50 backdrop-blur-md transition-opacity">
@@ -188,82 +201,164 @@
 </div>
 
 <script>
-    // --- COLE O SEU LINK DO GITHUB AQUI ---
-    const BGM_URL = "https://github.com/lobocastler/Music_game/raw/refs/heads/main/Beneath_the_Stone_Vault.mp3";
+    // --- FUNÇÕES DA INTERFACE ---
+    function showLevelSelector() {
+        document.getElementById('level-selector-modal').classList.remove('hidden');
+        document.getElementById('level-input').value = currentLevel;
+        setTimeout(() => document.getElementById('level-input').focus(), 100);
+    }
     
-    // --- ÁUDIO (Música Externa + SFX Sintetizado) ---
+    function closeLevelSelector() {
+        document.getElementById('level-selector-modal').classList.add('hidden');
+    }
+    
+    function jumpToLevel() {
+        let val = parseInt(document.getElementById('level-input').value);
+        if (val >= 1 && val <= 100) {
+            currentLevel = val;
+            closeLevelSelector();
+            loadLevel(currentLevel);
+        } else {
+            document.getElementById('level-input').style.borderColor = 'red';
+            setTimeout(() => document.getElementById('level-input').style.borderColor = '#4b5563', 500);
+        }
+    }
+
+    // --- ENGENHARIA DE ÁUDIO "NUCLEAR" (Descodificação em Memória via Fetch) ---
+    // O URL raw.githubusercontent.com evita problemas de redireccionamento e de CORS
+    const BGM_URL = "https://raw.githubusercontent.com/lobocastler/Music_game/main/Beneath_the_Stone_Vault.mp3";
+    
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
     let masterGain = null;
-    let bgmAudioElement = null;
+    
+    let bgmGainNode = null;
+    let bgmBuffer = null;
+    let bgmSourceNode = null;
+    let isBgmLoading = false;
     let isMuted = true;
-    let userVolume = 0.5; 
+    
+    let bgmVolume = 0.20; 
+    let sfxVolume = 0.80; 
 
     function initAudio() {
-        try {
-            if (!audioCtx) {
-                audioCtx = new AudioContext();
-                masterGain = audioCtx.createGain();
-                masterGain.connect(audioCtx.destination);
-                masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
             
-            // Inicia o elemento de Áudio Externo (Música do GitHub)
-            if (!bgmAudioElement && BGM_URL !== "COLE_O_SEU_LINK_DO_GITHUB_AQUI") {
-                bgmAudioElement = new Audio(BGM_URL);
-                bgmAudioElement.loop = true;
-                bgmAudioElement.volume = userVolume * 0.4; // 40% do volume para não abafar os efeitos
-            }
-        } catch(e) { console.error("Erro no Audio", e); }
+            masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
+            masterGain.gain.value = 1.0;
+            
+            bgmGainNode = audioCtx.createGain();
+            bgmGainNode.gain.value = bgmVolume;
+            bgmGainNode.connect(masterGain); 
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    // A Solução Definitiva: Vai buscar a música por Fetch e descodifica diretamente no motor!
+    async function loadAndPlayBGM() {
+        if (isBgmLoading || !audioCtx) return;
+        
+        // Se a música já estiver descarregada, só precisamos dar play
+        if (bgmBuffer) {
+            startBgmSource();
+            return;
+        }
+
+        isBgmLoading = true;
+        const toast = document.getElementById('audio-toast');
+        toast.innerText = "A descarregar música do GitHub (Aguarde...)";
+        toast.style.opacity = '1';
+
+        try {
+            const response = await fetch(BGM_URL);
+            if (!response.ok) throw new Error("Erro de rede no Github");
+            
+            const arrayBuffer = await response.arrayBuffer();
+            bgmBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            
+            toast.innerText = "Música pronta a bombar!";
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+            
+            if (!isMuted) startBgmSource();
+            
+        } catch(e) {
+            console.error("Falha ao carregar BGM", e);
+            toast.innerText = "Falha ao carregar música externa.";
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        } finally {
+            isBgmLoading = false;
+        }
+    }
+
+    function startBgmSource() {
+        if (!bgmBuffer || isMuted || !audioCtx) return;
+        
+        if (bgmSourceNode) {
+            try { bgmSourceNode.stop(); } catch(e){}
+        }
+        
+        bgmSourceNode = audioCtx.createBufferSource();
+        bgmSourceNode.buffer = bgmBuffer;
+        bgmSourceNode.loop = true;
+        bgmSourceNode.connect(bgmGainNode);
+        bgmSourceNode.start(0);
+    }
+
+    function stopBgmSource() {
+        if (bgmSourceNode) {
+            try { bgmSourceNode.stop(); } catch(e){}
+            bgmSourceNode = null;
+        }
     }
 
     function toggleAudio() {
         initAudio();
         isMuted = !isMuted;
+        
         const btn = document.getElementById('btn-audio');
-        const slider = document.getElementById('volume-slider');
-        const toast = document.getElementById('audio-toast');
+        const controls = document.getElementById('volume-controls');
         
         if (isMuted) {
             btn.innerHTML = '🔇 Som Off';
             btn.classList.replace('text-yellow-400', 'text-white/80');
-            slider.classList.add('hidden');
+            controls.classList.add('hidden');
             
             if (masterGain && audioCtx) masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-            if (bgmAudioElement) bgmAudioElement.pause();
+            stopBgmSource();
             
         } else {
             btn.innerHTML = '🔊 Som On';
             btn.classList.replace('text-white/80', 'text-yellow-400');
-            slider.classList.remove('hidden');
+            controls.classList.remove('hidden');
             
             if (masterGain && audioCtx) masterGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
             
-            if (bgmAudioElement) {
-                bgmAudioElement.play().catch(e => console.log("Bloqueio de Autoplay no Áudio Externo", e));
-            }
-            
-            toast.style.opacity = '1';
-            setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+            loadAndPlayBGM();
             playImpactSound(80); 
         }
     }
 
-    function updateVolume(val) {
-        userVolume = parseFloat(val);
-        if (bgmAudioElement) {
-            bgmAudioElement.volume = userVolume * 0.4;
+    // SLIDERS INDEPENDENTES PERFEITOS
+    function updateBgmVolume(val) {
+        bgmVolume = parseFloat(val);
+        if (bgmGainNode && audioCtx) {
+            bgmGainNode.gain.linearRampToValueAtTime(bgmVolume, audioCtx.currentTime + 0.1);
         }
     }
 
-    // Efeitos Sonoros Otimizados
+    function updateSfxVolume(val) {
+        sfxVolume = parseFloat(val);
+    }
+
+    // SFX AGORA USAM sfxVolume EXCLUSIVAMENTE
     function playImpactSound(velocity) {
-        if (isMuted || !audioCtx || !masterGain) return;
+        if (isMuted || !audioCtx || !masterGain || sfxVolume === 0) return;
         try {
-            const vol = Math.min(Math.max(velocity / 40, 0.15), 0.6) * userVolume; 
+            const vol = Math.min(Math.max(velocity / 40, 0.15), 0.6) * sfxVolume; 
             const t = audioCtx.currentTime;
 
             const osc = audioCtx.createOscillator();
@@ -295,9 +390,9 @@
     }
 
     function playDebrisSound(amount) {
-        if (isMuted || !audioCtx || !masterGain) return;
+        if (isMuted || !audioCtx || !masterGain || sfxVolume === 0) return;
         try {
-            const vol = Math.min(0.08 + (amount * 0.01), 0.4) * userVolume; 
+            const vol = Math.min(0.08 + (amount * 0.01), 0.4) * sfxVolume; 
             const sampleRate = audioCtx.sampleRate || 44100;
             const bufferSize = Math.floor(sampleRate * 0.15); 
             const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
@@ -321,7 +416,7 @@
     }
 
     function playExplosionSound() {
-        if (isMuted || !audioCtx || !masterGain) return;
+        if (isMuted || !audioCtx || !masterGain || sfxVolume === 0) return;
         try {
             const sampleRate = audioCtx.sampleRate || 44100;
             const bufferSize = Math.floor(sampleRate * 0.6); 
@@ -337,35 +432,12 @@
             filter.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.4); 
             
             const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.8 * userVolume, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.8 * sfxVolume, audioCtx.currentTime); 
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
             
             noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
             noise.start(audioCtx.currentTime);
         } catch(e) {}
-    }
-
-    // --- INTERFACE ---
-    function showLevelSelector() {
-        document.getElementById('level-selector-modal').classList.remove('hidden');
-        document.getElementById('level-input').value = currentLevel;
-        setTimeout(() => document.getElementById('level-input').focus(), 100);
-    }
-    
-    function closeLevelSelector() {
-        document.getElementById('level-selector-modal').classList.add('hidden');
-    }
-    
-    function jumpToLevel() {
-        let val = parseInt(document.getElementById('level-input').value);
-        if (val >= 1 && val <= 100) {
-            currentLevel = val;
-            closeLevelSelector();
-            loadLevel(currentLevel);
-        } else {
-            document.getElementById('level-input').style.borderColor = 'red';
-            setTimeout(() => document.getElementById('level-input').style.borderColor = '#4b5563', 500);
-        }
     }
 
     // --- CONFIGURAÇÃO FÍSICA OTIMIZADA (Hyper-FPS) ---
@@ -668,7 +740,7 @@
 
                 if (tumbled || blownAway || fellToGround) {
                     block.customDestroyed = true;
-                    // Debris não bate em Debris (Otimização Máxima)
+                    // Debris não bate em Debris
                     block.collisionFilter.category = CAT_DEBRIS;
                     block.collisionFilter.mask = CAT_DEFAULT | CAT_INTACT; 
                     newDestructions++;
@@ -1269,6 +1341,3 @@
 </script>
 </body>
 </html>
-
-
-```
